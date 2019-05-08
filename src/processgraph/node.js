@@ -33,9 +33,59 @@ module.exports = class ProcessGraphNode {
 		return Object.keys(this.arguments);
 	}
 
-	getArgument(name, defaultValue = undefined, getResult = true) {
-		var arg = typeof this.arguments[name] === 'undefined' ? defaultValue : this.arguments[name];
-		return this.processArgument(arg, getResult);
+	hasArgument(name) {
+		return (name in this.arguments);
+	}
+
+	getArgumentType(name) {
+		return ProcessGraphNode.getType(this.arguments[name]);
+	}
+
+	getRawArgument(name) {
+		return this.arguments[name];
+	}
+
+	getRawArgumentValue(name) {
+		var arg = this.arguments[name];
+		switch(ProcessGraphNode.getType(arg)) {
+			case 'result':
+				return arg.from_node;
+			case 'callback':
+				return arg.callback;
+			case 'callback-argument':
+				return arg.from_argument;
+			default:
+				return arg;
+		}
+	}
+
+	getArgument(name, defaultValue = undefined) {
+		if (typeof this.arguments[name] === 'undefined') {
+			return defaultValue;
+		}
+		return this.processArgument(this.arguments[name]);
+	}
+
+	processArgument(arg) {
+		var type = ProcessGraphNode.getType(arg);
+		switch(type) {
+			case 'result':
+				return this.processGraph.getNode(arg.from_node).getResult();
+			case 'callback':
+				return arg.callback;
+			case 'callback-argument':
+				return this.processGraph.getParameter(arg.from_argument);
+			case 'variable':
+				return this.processGraph.getVariableValue(arg.variable_id);
+			case 'array':
+			case 'object':
+				for(var i in arg) {
+					arg[i] = this.processArgument(arg[i]);
+				}
+				return arg;
+			default:
+				return arg;
+		}
 	}
 
 	static getType(obj, reportNullAs = 'null') {
@@ -63,38 +113,6 @@ module.exports = class ProcessGraphNode {
 			}
 		}
 		return (typeof obj);
-	}
-
-	processArgument(arg, getResult = true) {
-		var type = ProcessGraphNode.getType(arg);
-		switch(type) {
-			case 'result':
-				if (getResult) {
-					return this.processGraph.getNode(arg.from_node).getResult();
-				}
-				else {
-					return arg;
-				}
-			case 'callback':
-				return arg.callback;
-			case 'callback-argument':
-				if (getResult) {
-					return this.processGraph.getParameter(arg.from_argument);
-				}
-				else {
-					return arg;
-				}
-			case 'variable':
-				return this.processGraph.getVariableValue(arg.variable_id);
-			case 'array':
-			case 'object':
-				for(var i in arg) {
-					arg[i] = this.processArgument(arg[i], getResult);
-				}
-				return arg;
-			default:
-				return arg;
-		}
 	}
 
 	isStartNode() {

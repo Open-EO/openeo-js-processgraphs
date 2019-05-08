@@ -8,7 +8,7 @@ const VARIABLE_TYPES = ['string', 'number', 'boolean', 'array', 'object'];
 module.exports = class ProcessGraph {
 
 	constructor(jsonProcessGraph, processRegistry) {
-		this.json = jsonProcessGraph;
+		this.json = Utils.mergeDeep({}, jsonProcessGraph);
 		this.processRegistry = processRegistry;
 		this.nodes = [];
 		this.startNodes = {};
@@ -21,6 +21,11 @@ module.exports = class ProcessGraph {
 		this.validated = false;
 		this.errors = new ErrorList();
 		this.parameters = {};
+	}
+
+	// Important: This avoids circular reference errors
+	toJSON() {
+		return this.json;
 	}
 
 	createNodeInstance(json, id, parent) {

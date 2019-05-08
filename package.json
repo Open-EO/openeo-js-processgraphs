@@ -1,6 +1,6 @@
 {
   "name": "@openeo/js-commons",
-  "version": "0.4.0",
+  "version": "0.4.0-beta.1",
   "author": "openEO Consortium",
   "contributors": [
     {
@@ -16,23 +16,27 @@
     "type": "git",
     "url": "https://github.com/open-eo/openeo-js-commons.git"
   },
-  "main": "dist/main.js",
+  "main": "src/main.js",
   "files": [
-    "dist/*.js"
+    "dist/*.js",
+    "src/*"
   ],
   "scripts": {
     "build": "npx webpack",
     "test": "jest --env=jsdom",
     "test_node": "jest --env=node"
   },
+  "peerDependencies": {
+    "ajv": "^6.10.0"
+  },
   "dependencies": {
-    "ajv": "^6.9.1",
     "compare-versions": "^3.4.0"
   },
   "devDependencies": {
     "jest": "^24.5.0",
-    "jest-html-reporter": "^2.4.2",
-    "webpack": "^4.29.0",
+    "jest-html-reporter": "^2.5.0",
+    "webpack": "^4.30.0",
+    "webpack-bundle-analyzer": "^3.3.2",
     "webpack-cli": "^3.2.1"
   },
   "browserslist": [

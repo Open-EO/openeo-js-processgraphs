@@ -33,6 +33,29 @@ var Utils = {
 			}
 		}
 		return message;
+	},
+
+	mergeDeep(target, ...sources) {
+		if (!sources.length) {
+			return target;
+		}
+		const source = sources.shift(); 
+	  
+		if (this.isObject(target) && this.isObject(source)) {
+			for (const key in source) {
+				if (this.isObject(source[key])) {
+					if (!target[key]) {
+						target[key] = {};
+					}
+					this.mergeDeep(target[key], source[key]); 
+				}
+				else {
+					target[key] = source[key];
+				}
+			}
+		}
+	  
+		return this.mergeDeep(target, ...sources); 
 	}
 
 };

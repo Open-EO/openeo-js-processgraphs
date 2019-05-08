@@ -29,8 +29,8 @@ module.exports = class BaseProcess {
 		// Validate against JSON Schema
 		for(let name in this.schema.parameters) {
 			let param = this.schema.parameters[name];
-			// Check whether parameter is required
-			let arg = node.getArgument(name, undefined, false);
+
+			let arg = node.getRawArgument(name);
 			if (await this.validateArgument(arg, node, name, param)) {
 				continue;
 			}
@@ -54,6 +54,7 @@ module.exports = class BaseProcess {
 			return true;
 		}
 		switch(argType) {
+			// Check whether parameter is required
 			case 'undefined':
 				if (param.required) {
 					throw new ProcessGraphError('ProcessArgumentRequired', {
@@ -65,7 +66,7 @@ module.exports = class BaseProcess {
 			case 'callback-argument':
 				var cbParams = node.getProcessGraph().getCallbackParameters();
 				if (Utils.isObject(cbParams) && cbParams.hasOwnProperty(arg.from_argument)) {
-					return this.isSchemaCompatible(param.schema, cbParams[arg.from_argument]);
+					return JsonSchemaValidator.isSchemaCompatible(param.schema, cbParams[arg.from_argument]);
 				}
 				else {
 					throw new ProcessGraphError('CallbackArgumentInvalid', {
@@ -78,13 +79,13 @@ module.exports = class BaseProcess {
 				var variableSchema = {
 					type: arg.type || 'string'
 				};
-				return this.isSchemaCompatible(param.schema, variableSchema);
+				return JsonSchemaValidator.isSchemaCompatible(param.schema, variableSchema);
 			case 'result':
 				try {
 					var pg = node.getProcessGraph();
 					var process_id = pg.getNode(arg.from_node).process_id;
 					var process = pg.getProcess(process_id);
-					return this.isSchemaCompatible(param.schema, process.schema.returns.schema);
+					return JsonSchemaValidator.isSchemaCompatible(param.schema, process.schema.returns.schema);
 				} catch (e) {}
 				break;
 			case 'array':
@@ -106,12 +107,6 @@ module.exports = class BaseProcess {
 	test() {
 		// Run the tests from the examples
 		throw "test not implemented yet";
-	}
-
-	// Checks whether the valueSchema is compatible to the paramSchema.
-	// So would a value compatible with valueSchema be accepted by paramSchema?
-	isSchemaCompatible(paramSchema, valueSchema) {
-		return true; // ToDo: Implement
 	}
 
 };

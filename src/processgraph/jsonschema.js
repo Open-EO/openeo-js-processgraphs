@@ -144,4 +144,10 @@ module.exports = class JsonSchemaValidator {
 		return true; // ToDo
 	}
 
+	// Checks whether the valueSchema is compatible to the paramSchema.
+	// So would a value compatible with valueSchema be accepted by paramSchema?
+	static isSchemaCompatible(paramSchema, valueSchema) {
+		return true; // ToDo: Implement
+	}
+
 }
