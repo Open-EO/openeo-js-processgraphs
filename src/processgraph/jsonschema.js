@@ -1,8 +1,9 @@
 const ajv = require('ajv');
+const Utils = require('../utils');
 
 module.exports = class JsonSchemaValidator {
 
-	constructor() {
+	constructor(options) {
 		var ajvOptions = {
 			schemaId: 'auto',
 			format: 'full',
@@ -41,6 +42,13 @@ module.exports = class JsonSchemaValidator {
 			valid: true,
 			errors: true
 		});
+
+		if (Utils.isObject(options)) {
+			this.collectionResolver = options.collectionResolver || null,
+			this.jobResolver = options.jobResolver || null;
+			this.pgResolver = options.pgResolver || null;
+			this.outputFormats = options.outputFormats || null;
+		}
 	}
 
 	async validateJson(json, schema) {
@@ -56,7 +64,12 @@ module.exports = class JsonSchemaValidator {
 			await this.ajv.validate(clonedSchema, json);
 			return [];
 		} catch (e) {
-			return e.errors.map(e => e.message);
+			if (Array.isArray(e.errors)) {
+				return e.errors.map(e => e.message);
+			}
+			else {
+				throw e;
+			}
 		}
 	}
 
@@ -71,23 +84,49 @@ module.exports = class JsonSchemaValidator {
 		return result.errors || [];
 	}
 
-	validateBandName() {
+	// callback is an async function accepting a single parameter, which is the requested collection id. Must return a boolean (true = found, false = not found).
+	setCollectionResolver(callback) {
+		this.collectionResolver = callback;
+	}
+
+	// callback is an async function accepting a single parameter, which is the requested job id. Must return a boolean (true = found, false = not found).
+	setJobResolver(callback) {
+		this.jobResolver = callback;
+	}
+
+	// callback is an async function accepting a single parameter, which is the requested process graph id. Must return a boolean (true = found, false = not found).
+	setStoredProcessGraphResolver(callback) {
+		this.pgResolver = callback;
+	}
+
+	// Expects API compatible output formats (see GET /output_formats).
+	setOutputFormats(outputFormats) {
+		this.outputFormats = {};
+		for (var key in outputFormats) {
+			this.outputFormats[key.toUpperCase()] = outputFormats[key];
+		}
+	}
+
+	validateBandName(data) {
 		return true; // ToDo
 	}
 
-	validateBoundingBox() {
+	validateBoundingBox(data) {
+		return true; // ToDo: Fully check against bounding box schema
+	}
+
+	validateCallback(data) {
 		return true; // ToDo
 	}
 
-	validateCallback() {
-		return true; // ToDo
+	async validateCollectionId(data) {
+		if (typeof this.collectionResolver === 'function') {
+			return this.collectionResolver(data);
+		}
+		return true;
 	}
 
-	validateCollectionId(data) {
-		return true; // ToDo
-	}
-
-	validateEpsgCode() {
+	validateEpsgCode(data) {
 		return true; // ToDo
 	}
 
@@ -100,47 +139,55 @@ module.exports = class JsonSchemaValidator {
 		return true;
 	}
 	
-	async validateJobId() {
-		return true; // ToDo
+	async validateJobId(data) {
+		if (typeof this.jobResolver === 'function') {
+			return this.jobResolver(data);
+		}
+		return true;
 	}
 	
-	validateKernel() {
+	validateKernel(data) {
 		return true; // ToDo
 	}
 	
 	validateOutputFormat(data) {
-		return true; // ToDo
+		if (Utils.isObject(this.outputFormats) && !(data.toUpperCase() in this.outputFormats)) {
+			return false;
+		}
+		return true;
 	}
 	
-	validateOutputFormatOptions() {
-		return true; // ToDo
+	validateOutputFormatOptions(data) {
+		return true; // ToDO: This depends on the output format specified and can't be fully validated without knowning the chosen output format.
 	}
 	
-	async validateProcessGraphId() {
-		return true; // ToDo
+	async validateProcessGraphId(data) {
+		if (typeof this.pgResolver === 'function') {
+			return this.pgResolver(data);
+		}
 	}
 	
-	validateProcessGraphVariables() {
+	validateProcessGraphVariables(data) {
 		return true; // ToDo
 	}
 
-	validateProjDefinition() {
+	validateProjDefinition(data) {
 		return true; // ToDo
 	}
 	
-	validateRasterCube() {
+	validateRasterCube(data) {
 		return true; // ToDo
 	}
 	
-	validateTemporalInterval() {
-		return true; // ToDo
+	validateTemporalInterval(data) {
+		return true; // ToDo: Fully check against schema (Array, two elements, both being null or date-time or date or time). Can't be both null...
 	}
 	
-	validateTemporalIntervals() {
-		return true; // ToDo
+	validateTemporalIntervals(data) {
+		return true; // ToDo: Fully chack against schema (Array of the schema above)
 	}
 
-	validateVectorCube() {
+	validateVectorCube(data) {
 		return true; // ToDo
 	}
 
@@ -148,6 +195,18 @@ module.exports = class JsonSchemaValidator {
 	// So would a value compatible with valueSchema be accepted by paramSchema?
 	static isSchemaCompatible(paramSchema, valueSchema) {
 		return true; // ToDo: Implement
+	}
+
+	static async getTypeForValue(types, value) {
+		var validator = new JsonSchemaValidator();
+		var potentialTypes = [];
+		for(var i in types) {
+			var errors = await validator.validateJson(value, types[i]);
+			if (errors.length === 0) {
+				potentialTypes.push(i);
+			}
+		}
+		return potentialTypes.length > 1 ? potentialTypes : potentialTypes[0];
 	}
 
 }
