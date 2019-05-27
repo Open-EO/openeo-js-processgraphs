@@ -206,7 +206,7 @@ module.exports = class JsonSchemaValidator {
 				potentialTypes.push(i);
 			}
 		}
-		return potentialTypes.length > 1 ? potentialTypes : potentialTypes[0];
+		return potentialTypes.length > 1 ? potentialTypes : potentialTypes[0]; // Returns undefined if no valid type is found
 	}
 
 }
