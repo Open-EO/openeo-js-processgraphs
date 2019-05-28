@@ -55,7 +55,7 @@ module.exports = class JsonSchemaValidator {
 		 // Make sure we don't alter the process registry
 		var clonedSchema = Object.assign({}, schema);
 		clonedSchema["$async"] = true;
-		if (typeof schema["$schema"] === 'undefined') {
+		if (typeof clonedSchema["$schema"] === 'undefined') {
 			// Set applicable JSON SChema draft version if not already set
 			clonedSchema["$schema"] = "http://json-schema.org/draft-07/schema#";
 		}
