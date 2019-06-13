@@ -37,7 +37,7 @@ module.exports = class ErrorList {
 	getMessage() {
 		var msg = '';
 		for (var i in this.errors) {
-			msg += (parseInt(i)+1) + ". " + this.errors[i].message + "\r\n";
+			msg += (parseInt(i, 10)+1) + ". " + this.errors[i].message + "\r\n";
 		}
 		return msg.trim();
 	}

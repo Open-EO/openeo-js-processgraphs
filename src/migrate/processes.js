@@ -12,7 +12,7 @@ var MigrateProcesses = {
     },
 
     // Always returns a copy of the input process object
-    convertProcessToLatestSpec: function(originalProcess, version = null) {
+    convertProcessToLatestSpec(originalProcess, version = null) {
         var process = Object.assign({}, originalProcess);
         if (version === null) {
             version = this.guessProcessSpecVersion(process);

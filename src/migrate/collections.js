@@ -12,7 +12,7 @@ var MigrateCollections = {
     },
 
     // Always returns a copy of the input collection object
-    convertCollectionToLatestSpec: function(originalCollection, version = null) {
+    convertCollectionToLatestSpec(originalCollection, version = null) {
         var collection = Object.assign({}, originalCollection);
         if (!Object.keys(collection).length) {
             return collection;

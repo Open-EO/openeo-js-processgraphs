@@ -19,7 +19,7 @@ var MigrateCapabilities = {
     },
 
     // Always returns a copy of the input object
-    convertCapabilitiesToLatestSpec: function(originalCapabilities, version = null, title = "Unknown") {
+    convertCapabilitiesToLatestSpec(originalCapabilities, version = null, title = "Unknown") {
         var capabilities = Object.assign({}, originalCapabilities);
         if (version === null) {
             version = this.guessApiVersion(capabilities);
@@ -57,7 +57,7 @@ var MigrateCapabilities = {
     },
 
     // Always returns a copy of the input object
-    convertBillingToLatestSpec: function(originalBilling, version) {
+    convertBillingToLatestSpec(originalBilling, version) {
         var billing = Object.assign({}, originalBilling);
         // convert v0.3 billing info to v0.4 format
         if (Utils.compareVersion(version, "0.3.x") === 0) {
@@ -79,7 +79,7 @@ var MigrateCapabilities = {
     },
 
     // Always returns a copy of the input object
-    convertEndpointsToLatestSpec: function(originalEndpoints, version) {
+    convertEndpointsToLatestSpec(originalEndpoints, version) {
         var endpoints = [];
         if (Array.isArray(originalEndpoints)) {
             endpoints = originalEndpoints.slice(0);
@@ -92,7 +92,7 @@ var MigrateCapabilities = {
     },
 
     // Always returns a copy of the input object
-    convertOutputFormatsToLatestSpec: function(originalFormats, version) {
+    convertOutputFormatsToLatestSpec(originalFormats, version) {
         var formats = Object.assign({}, originalFormats);
         // convert v0.3 output formats to v0.4 format
         if (Utils.compareVersion(version, "0.3.x") === 0) {
@@ -104,7 +104,7 @@ var MigrateCapabilities = {
     },
 
     // Always returns a copy of the input object
-    convertServiceTypesToLatestSpec: function(originalTypes, version) {
+    convertServiceTypesToLatestSpec(originalTypes, version) {
         var types = Object.assign({}, originalTypes);
         // convert v0.3 service types to v0.4 format
         if (Utils.compareVersion(version, "0.3.x") === 0) {

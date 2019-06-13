@@ -16,19 +16,20 @@ script:
   - npm run test
   - npm run test_node
 # Build
-  - npm run build
+#  - npm run build # Doesn't stop at the moment due to webpack-bundle-analyzer => build would fail
+# Generate docs
   - npm run docs
 # Deploy 
-#  - git clone --branch gh-pages https://$GITHUB_TOKEN@github.com/Open-EO/openeo-js-commons.git gh-pages
-#  - cd gh-pages
-#  - cp -R ../docs/@openeo/js-commons/* .
+  - git clone --branch gh-pages https://$GITHUB_TOKEN@github.com/Open-EO/openeo-js-commons.git gh-pages
+  - cd gh-pages
+  - cp -R ../docs/@openeo/js-commons/* .
 
-#deploy:
-#  provider: pages
-#  skip-cleanup: true
-#  github-token: $GITHUB_TOKEN
-#  keep-history: true
-#  committer-from-gh: true
-#  local-dir: gh-pages
-#  on:
-#    all_branches: true
+deploy:
+  provider: pages
+  skip-cleanup: true
+  github-token: $GITHUB_TOKEN
+  keep-history: true
+  committer-from-gh: true
+  local-dir: gh-pages
+  on:
+    all_branches: true
