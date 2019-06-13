@@ -39,7 +39,7 @@ var MigrateCollections = {
             // Migrate eo:bands
             if (collection['eo:bands'] !== null && typeof collection['eo:bands'] === 'object' && !Array.isArray(collection['eo:bands'])) {
                 var bands = [];
-                for(var key in collection['eo:bands']) {
+                for(let key in collection['eo:bands']) {
                     var band = Object.assign({}, collection['eo:bands'][key]);
                     band.name = key;
                     if (typeof band.resolution !== 'undefined' && typeof band.gsd === 'undefined') {
@@ -55,7 +55,7 @@ var MigrateCollections = {
                 collection['eo:bands'] = bands;
             }
             // Move all other properties into properties.
-            for (var key in collection) {
+            for (let key in collection) {
                 if (key.includes(':')) {
                     collection.properties[key] = collection[key];
                     delete collection[key];

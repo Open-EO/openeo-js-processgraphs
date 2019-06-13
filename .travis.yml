@@ -10,5 +10,25 @@ cache:
     - "node_modules"
 
 script:
+# Run code checks
+  - npm run compat
+# Run tests
   - npm run test
   - npm run test_node
+# Build
+  - npm run build
+  - npm run docs
+# Deploy 
+#  - git clone --branch gh-pages https://$GITHUB_TOKEN@github.com/Open-EO/openeo-js-commons.git gh-pages
+#  - cd gh-pages
+#  - cp -R ../docs/@openeo/js-commons/* .
+
+#deploy:
+#  provider: pages
+#  skip-cleanup: true
+#  github-token: $GITHUB_TOKEN
+#  keep-history: true
+#  committer-from-gh: true
+#  local-dir: gh-pages
+#  on:
+#    all_branches: true

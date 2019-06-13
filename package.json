@@ -9,6 +9,7 @@
   ],
   "description": "Common JS functionalities for openEO.",
   "license": "Apache-2.0",
+  "homepage": "http://openeo.org",
   "bugs": {
     "url": "https://github.com/open-eo/openeo-js-commons/issues"
   },
@@ -21,27 +22,26 @@
     "dist/*.js",
     "src/*"
   ],
-  "scripts": {
-    "build": "npx webpack",
-    "test": "jest --env=jsdom",
-    "test_node": "jest --env=node"
-  },
   "peerDependencies": {
     "ajv": "^6.10.0"
   },
-  "dependencies": {
-    "compare-versions": "^3.4.0"
-  },
   "devDependencies": {
-    "jest": "^24.5.0",
+    "jest": "^24.7.1",
     "jest-html-reporter": "^2.5.0",
+    "jsdoc": "^3.5.5",
+    "jshint": "^2.10.2",
     "webpack": "^4.30.0",
     "webpack-bundle-analyzer": "^3.3.2",
     "webpack-cli": "^3.2.1"
   },
-  "browserslist": [
-    "> 3%",
-    "last 2 versions",
-    "not ie < 11"
-  ]
+  "dependencies": {
+    "compare-versions": "^3.4.0"
+  },
+  "scripts": {
+    "docs": "jsdoc src -r -d docs/ -P package.json -R README.md",
+    "build": "npx webpack",
+    "compat": "jshint src",
+    "test": "jest --env=jsdom",
+    "test_node": "jest --env=node"
+  }
 }

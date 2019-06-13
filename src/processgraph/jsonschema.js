@@ -44,7 +44,7 @@ module.exports = class JsonSchemaValidator {
 		});
 
 		if (Utils.isObject(options)) {
-			this.collectionResolver = options.collectionResolver || null,
+			this.collectionResolver = options.collectionResolver || null;
 			this.jobResolver = options.jobResolver || null;
 			this.pgResolver = options.pgResolver || null;
 			this.outputFormats = options.outputFormats || null;
@@ -54,10 +54,10 @@ module.exports = class JsonSchemaValidator {
 	async validateJson(json, schema) {
 		 // Make sure we don't alter the process registry
 		var clonedSchema = Object.assign({}, schema);
-		clonedSchema["$async"] = true;
-		if (typeof clonedSchema["$schema"] === 'undefined') {
+		clonedSchema.$async = true;
+		if (typeof clonedSchema.$schema === 'undefined') {
 			// Set applicable JSON SChema draft version if not already set
-			clonedSchema["$schema"] = "http://json-schema.org/draft-07/schema#";
+			clonedSchema.$schema = "http://json-schema.org/draft-07/schema#";
 		}
 
 		try {
@@ -75,9 +75,9 @@ module.exports = class JsonSchemaValidator {
 
 	validateJsonSchema(schema) {
 		// Set applicable JSON SChema draft version if not already set
-		if (typeof schema["$schema"] === 'undefined') {
-			var schema = Object.assign({}, schema); // Make sure we don't alter the process registry
-			schema["$schema"] = "http://json-schema.org/draft-07/schema#";
+		if (typeof schema.$schema === 'undefined') {
+			schema = Object.assign({}, schema); // Make sure we don't alter the process registry
+			schema.$schema = "http://json-schema.org/draft-07/schema#";
 		}
 	
 		let result = this.ajv.compile(schema);
@@ -107,15 +107,15 @@ module.exports = class JsonSchemaValidator {
 		}
 	}
 
-	validateBandName(data) {
+	validateBandName(/*data*/) {
 		return true; // ToDo
 	}
 
-	validateBoundingBox(data) {
+	validateBoundingBox(/*data*/) {
 		return true; // ToDo: Fully check against bounding box schema
 	}
 
-	validateCallback(data) {
+	validateCallback(/*data*/) {
 		return true; // ToDo
 	}
 
@@ -126,7 +126,7 @@ module.exports = class JsonSchemaValidator {
 		return true;
 	}
 
-	validateEpsgCode(data) {
+	validateEpsgCode(/*data*/) {
 		return true; // ToDo
 	}
 
@@ -146,7 +146,7 @@ module.exports = class JsonSchemaValidator {
 		return true;
 	}
 	
-	validateKernel(data) {
+	validateKernel(/*data*/) {
 		return true; // ToDo
 	}
 	
@@ -157,7 +157,7 @@ module.exports = class JsonSchemaValidator {
 		return true;
 	}
 	
-	validateOutputFormatOptions(data) {
+	validateOutputFormatOptions(/*data*/) {
 		return true; // ToDO: This depends on the output format specified and can't be fully validated without knowning the chosen output format.
 	}
 	
@@ -167,33 +167,33 @@ module.exports = class JsonSchemaValidator {
 		}
 	}
 	
-	validateProcessGraphVariables(data) {
+	validateProcessGraphVariables(/*data*/) {
 		return true; // ToDo
 	}
 
-	validateProjDefinition(data) {
+	validateProjDefinition(/*data*/) {
 		return true; // ToDo
 	}
 	
-	validateRasterCube(data) {
+	validateRasterCube(/*data*/) {
 		return true; // ToDo
 	}
 	
-	validateTemporalInterval(data) {
+	validateTemporalInterval(/*data*/) {
 		return true; // ToDo: Fully check against schema (Array, two elements, both being null or date-time or date or time). Can't be both null...
 	}
 	
-	validateTemporalIntervals(data) {
+	validateTemporalIntervals(/*data*/) {
 		return true; // ToDo: Fully chack against schema (Array of the schema above)
 	}
 
-	validateVectorCube(data) {
+	validateVectorCube(/*data*/) {
 		return true; // ToDo
 	}
 
 	// Checks whether the valueSchema is compatible to the paramSchema.
 	// So would a value compatible with valueSchema be accepted by paramSchema?
-	static isSchemaCompatible(paramSchema, valueSchema) {
+	static isSchemaCompatible(/*paramSchema, valueSchema*/) {
 		return true; // ToDo: Implement
 	}
 
@@ -209,4 +209,4 @@ module.exports = class JsonSchemaValidator {
 		return potentialTypes.length > 1 ? potentialTypes : potentialTypes[0]; // Returns undefined if no valid type is found
 	}
 
-}
+};

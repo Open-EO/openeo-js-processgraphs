@@ -46,4 +46,4 @@ module.exports = class ErrorList {
 		return this.errors;
 	}
 
-}
+};

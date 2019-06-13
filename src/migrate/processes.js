@@ -40,7 +40,7 @@ var MigrateProcesses = {
             }
             // exception object
             if (typeof process.exceptions === 'object') {
-                for(var key in process.exceptions) {
+                for(let key in process.exceptions) {
                     var e = process.exceptions[key];
                     if (typeof e.message === 'undefined') {
                         process.exceptions[key] = Object.assign({}, e, {
@@ -52,7 +52,7 @@ var MigrateProcesses = {
             // examples object
             if (typeof process.examples === 'object') {
                 var examples = [];
-                for(var key in process.examples) {
+                for(let key in process.examples) {
                     var old = process.examples[key];
                     var example = {
                         title: old.summary || key,

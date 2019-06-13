@@ -54,11 +54,11 @@ module.exports = class ProcessGraph {
 			return;
 		}
 
-		for(var id in this.json) {
+		for(let id in this.json) {
 			this.nodes[id] = this.createNodeInstance(this.json[id], id, this);
 		}
 
-		for(var id in this.nodes) {
+		for(let id in this.nodes) {
 			var node = this.nodes[id];
 
 			if (node.isResultNode) {
@@ -202,7 +202,7 @@ module.exports = class ProcessGraph {
 		}
 	}
 
-	parseCallbackArgument(node, name) {
+	parseCallbackArgument(/*node, name*/) {
 		// ToDo: Parse callback argument
 	}
 

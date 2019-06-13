@@ -75,6 +75,7 @@ module.exports = class BaseProcess {
 						process_id: this.schema.id
 					});
 				}
+				/* falls through */
 			case 'variable':
 				var variableSchema = {
 					type: arg.type || 'string'
@@ -94,13 +95,12 @@ module.exports = class BaseProcess {
 					await this.validateArgument(arg[i], node, parameterName);
 				}
 				return true; // ToDo: Remove this and check how we can validate arrays and objects that have references to callback arguments, variables and node results in them...
-				break;
 		}
 
 		return false;
 	}
 
-	async execute(node) {
+	async execute(/*node*/) {
 		throw "execute not implemented yet";
 	}
 

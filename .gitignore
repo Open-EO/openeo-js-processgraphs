@@ -1,9 +1,11 @@
+# NPM
 node_modules/
-/dist
 /package-lock.json
 
-/nbproject/
-.vscode
+# Build related
+/dist
 
+# Reports
 coverage/
+docs/
 /test-report.html

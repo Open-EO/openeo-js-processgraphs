@@ -38,7 +38,7 @@ module.exports = class ProcessGraphError extends Error {
 		return {
 			code: this.code,
 			message: this.message
-		}
+		};
 	}
 
-}
+};

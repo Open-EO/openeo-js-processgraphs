@@ -155,4 +155,4 @@ module.exports = class ProcessGraphNode {
 		return (this.expectsFrom.length === this.resultsAvailableFrom.length); // all dependencies solved?
 	}
 
-}
+};
