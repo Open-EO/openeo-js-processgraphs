@@ -12,21 +12,21 @@ var FeatureList = {
 		],
 		'Authenticate with HTTP Basic': [       // TODO: Remove later because this auth method should not be used
 			'get /credentials/basic',
-		//  'get /me'                           // not necessarily needed (just outputs metadata)
+	//  'get /me'                           // not necessarily needed (just outputs metadata)
 		],
 		'Authenticate with OpenID Connect': [   // TODO: Remove later because the user doesn't care HOW the auth works
 			'get /credentials/oidc',
-		//  'get /me'                           // not necessarily needed (just outputs metadata)
+	//  'get /me'                           // not necessarily needed (just outputs metadata)
 		],
 		'Batch processing': [
 			'get /jobs',
 			'post /jobs',
 			'get /jobs/{}',
-		//  'patch /jobs/{}',                   // not necessarily needed (can be achieved by deleting and re-creating)
+	//  'patch /jobs/{}',                   // not necessarily needed (can be achieved by deleting and re-creating)
 			'delete /jobs/{}',
 			'get /jobs/{}/results',
 			'post /jobs/{}/results',
-		//  'delete /jobs/{}/results'           // not necessarily needed (can be deleted by deleting the entire job)
+	//  'delete /jobs/{}/results'           // not necessarily needed (can be deleted by deleting the entire job)
 		],
 		'Estimate processing costs': [
 			'get /jobs/{}/estimate'
@@ -39,7 +39,7 @@ var FeatureList = {
 			'get /services',
 			'post /services',
 			'get /services/{}',
-		//  'patch /services/{}',               // not necessarily needed (can be achieved by deleting and re-creating)
+	//  'patch /services/{}',               // not necessarily needed (can be achieved by deleting and re-creating)
 			'delete /services/{}',
 		],
 		'File storage': [
@@ -52,7 +52,7 @@ var FeatureList = {
 			'get /process_graphs',
 			'post /process_graphs',
 			'get /process_graphs/{}',
-		//  'patch /process_graphs/{}',         // not necessarily needed (can be achieved by deleting and re-creating)
+	//  'patch /process_graphs/{}',         // not necessarily needed (can be achieved by deleting and re-creating)
 			'delete /process_graphs/{}'
 		],
 		'Validate process graphs': [

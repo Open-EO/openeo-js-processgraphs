@@ -180,11 +180,18 @@ module.exports = class JsonSchemaValidator {
 	}
 	
 	validateTemporalInterval(/*data*/) {
-		return true; // ToDo: Fully check against schema (Array, two elements, both being null or date-time or date or time). Can't be both null...
+		return true;
+		// ToDo: Fully check against schema, most is already checked by JSON Schemas itself, but check for example that 
+		// both can't be null at the same time or the first element is > the second element.
 	}
 	
-	validateTemporalIntervals(/*data*/) {
-		return true; // ToDo: Fully chack against schema (Array of the schema above)
+	validateTemporalIntervals(data) {
+		if (!Array.isArray(data)) {
+			return false;
+		}
+
+		var invalid = data.filter(x => !this.validateTemporalInterval(x));
+		return invalid.length === 0;
 	}
 
 	validateVectorCube(/*data*/) {

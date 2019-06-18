@@ -8,7 +8,10 @@ const VARIABLE_TYPES = ['string', 'number', 'boolean', 'array', 'object'];
 module.exports = class ProcessGraph {
 
 	constructor(jsonProcessGraph, processRegistry) {
-		this.json = Utils.mergeDeep({}, jsonProcessGraph);
+		// Don't use deep merging libs as it may lead to circular reference errors with Vue.
+		// JSON parse/stringify is fine here as we have a simple JSON-like data type without native JS things
+		// like functions, classes etc. that would get destroyed by stringify.
+		this.json = JSON.parse(JSON.stringify(jsonProcessGraph));
 		this.processRegistry = processRegistry;
 		this.nodes = [];
 		this.startNodes = {};
