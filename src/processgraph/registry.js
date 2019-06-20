@@ -27,6 +27,11 @@ module.exports = class ProcessRegistry {
 		return null;
 	}
 
+	getSchema(id) {
+		var p = this.get(id);
+		return p !== null ? p.schema : null;
+	}
+
 	getProcessSchemas() {
 		return Object.values(this.processes).map(impl => impl.schema);
 	}
