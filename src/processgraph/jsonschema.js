@@ -269,8 +269,56 @@ module.exports = class JsonSchemaValidator {
 
 	// Checks whether the valueSchema is compatible to the paramSchema.
 	// So would a value compatible with valueSchema be accepted by paramSchema?
-	static isSchemaCompatible(/*paramSchema, valueSchema*/) {
-		return true; // ToDo: Implement
+	static isSchemaCompatible(paramSchema, valueSchema, strict = false) {
+		var paramSchemas = this._convertSchemaToArray(paramSchema);
+		var valueSchemas = this._convertSchemaToArray(valueSchema);
+
+		var compatible = paramSchemas.filter(ps => {
+			for(var i in valueSchemas) {
+				var vs = valueSchemas[i];
+				if (typeof ps.type !== 'string' || (!strict && typeof vs.type !== 'string')) { // "any" type is always compatible
+					return true;
+				}
+				else if (ps.type === vs.type || (ps.type === 'number' && vs.type === 'integer') || (!strict && ps.type === 'integer' && vs.type === 'number')) {
+					if (ps.type === 'array' && Utils.isObject(ps.items) && Utils.isObject(vs.items))  {
+						if (JsonSchemaValidator.isSchemaCompatible(ps.items, vs.items, strict)) {
+							return true;
+						}
+					}
+					else if (ps.type === 'object' && Utils.isObject(ps.properties) && Utils.isObject(vs.properties)) {
+						// ToDo: Check properties, required properties etc.
+						return true;
+					}
+					else if (!strict && (typeof ps.format !== 'string' || typeof vs.format !== 'string')) {
+						return true;
+					}
+					else if (typeof ps.format !== 'string') { // types without format always accepts the same type with a format
+						return true;
+					}
+					else if (ps.format === vs.format) {
+						return true;
+					}
+				}
+			}
+			return false;
+		});
+
+		return compatible.length > 0;
+	}
+
+	static _convertSchemaToArray(schema) {
+		var schemas = [];
+		// ToDo: schema.not and schema.allOf is not supported - see also class constructor of ProcessSchema in processSchema.js of openeo-web-editor.
+		if (schema.oneOf || schema.anyOf) {
+			schemas = (schema.oneOf || schema.anyOf);
+		}
+		else if (Array.isArray(schema.type)) {
+			schemas = schema.type.map(t => Object.assign({}, schema, {type: t}));
+		}
+		else {
+			schemas = [schema];
+		}
+		return schemas;
 	}
 
 	/**

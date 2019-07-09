@@ -174,21 +174,51 @@ describe('JSON Schema Validator Tests', () => {
 		expect(errors.length).toBeGreaterThan(0);
 	});
 
-	var stringType = {
-		type: "string"
-	};
-	var dateTimeType = {
-		type: "string",
-		format: "date-time"
-	};
-	var nullType = {
-		type: "null"
-	};
+	var numberNullType = {type: ["number","null"]};
+	var integerType = {type: "integer"};
+	var stringType = {type: "string"};
+	var dateTimeType = {type: "string", format: "date-time"};
+	var nullType = {type: "null"};
+	var arrayOfAny = {type: 'array', items: {}};
+	var arrayOfNumbers = {type: 'array', items: {type: 'number'}};
+	var arrayOfIntegers = {type: 'array', items: {type: 'integer'}};
+	var anyType = {};
+	var rasterCubeType = {type: "object",format: "raster-cube"};
+	var vectorCubeType = {type: "object",format: "vector-cube"};
+	var dataCubeType = {anyOf: [rasterCubeType, vectorCubeType]};
+
 	test('getTypeForValue', async () => {
 		expect(await JsonSchemaValidator.getTypeForValue([stringType, nullType], null)).toBe("1");
 		expect(await JsonSchemaValidator.getTypeForValue([stringType, nullType], "Test")).toBe("0");
 		expect(await JsonSchemaValidator.getTypeForValue([stringType, nullType], 123)).toBeUndefined();
 		expect(await JsonSchemaValidator.getTypeForValue({nil: nullType, string: stringType, datetime: dateTimeType}, "2019-01-01T00:00:00Z")).toStrictEqual(["string","datetime"]);
+	});
+
+	test('isSchemaCompatible', async () => {
+		expect(await JsonSchemaValidator.isSchemaCompatible(numberNullType, integerType)).toBeTruthy();
+		expect(await JsonSchemaValidator.isSchemaCompatible(integerType, numberNullType)).toBeTruthy();
+		expect(await JsonSchemaValidator.isSchemaCompatible(integerType, numberNullType, true)).toBeFalsy();
+		expect(await JsonSchemaValidator.isSchemaCompatible(numberNullType, nullType)).toBeTruthy();
+		expect(await JsonSchemaValidator.isSchemaCompatible(nullType, numberNullType)).toBeTruthy();
+		expect(await JsonSchemaValidator.isSchemaCompatible(stringType, dateTimeType)).toBeTruthy();
+		expect(await JsonSchemaValidator.isSchemaCompatible(stringType, dateTimeType, true)).toBeTruthy();
+		expect(await JsonSchemaValidator.isSchemaCompatible(dateTimeType, stringType)).toBeTruthy();
+		expect(await JsonSchemaValidator.isSchemaCompatible(dateTimeType, stringType, true)).toBeFalsy();
+		expect(await JsonSchemaValidator.isSchemaCompatible(dateTimeType, dateTimeType)).toBeTruthy();
+		expect(await JsonSchemaValidator.isSchemaCompatible(arrayOfNumbers, arrayOfIntegers)).toBeTruthy();
+		expect(await JsonSchemaValidator.isSchemaCompatible(arrayOfIntegers, arrayOfNumbers)).toBeTruthy();
+		expect(await JsonSchemaValidator.isSchemaCompatible(arrayOfIntegers, arrayOfNumbers, true)).toBeFalsy();
+		expect(await JsonSchemaValidator.isSchemaCompatible(arrayOfIntegers, arrayOfAny)).toBeTruthy();
+		expect(await JsonSchemaValidator.isSchemaCompatible(arrayOfIntegers, arrayOfAny, true)).toBeFalsy();
+		expect(await JsonSchemaValidator.isSchemaCompatible(arrayOfAny, arrayOfIntegers)).toBeTruthy();
+		expect(await JsonSchemaValidator.isSchemaCompatible(numberNullType, anyType)).toBeTruthy();
+		expect(await JsonSchemaValidator.isSchemaCompatible(numberNullType, anyType, true)).toBeFalsy();
+		expect(await JsonSchemaValidator.isSchemaCompatible(anyType, numberNullType)).toBeTruthy();
+		expect(await JsonSchemaValidator.isSchemaCompatible(dataCubeType, nullType)).toBeFalsy();
+		expect(await JsonSchemaValidator.isSchemaCompatible(dataCubeType, rasterCubeType)).toBeTruthy();
+		expect(await JsonSchemaValidator.isSchemaCompatible(dataCubeType, vectorCubeType)).toBeTruthy();
+		expect(await JsonSchemaValidator.isSchemaCompatible(rasterCubeType, dataCubeType)).toBeTruthy();
+		expect(await JsonSchemaValidator.isSchemaCompatible(rasterCubeType, vectorCubeType)).toBeFalsy();
 	});
 
   });
