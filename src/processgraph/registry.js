@@ -10,9 +10,12 @@ module.exports = class ProcessRegistry {
 
 	addFromResponse(response) {
 		for(var i in response.processes) {
-			var p = response.processes[i];
-			this.processes[p.id] = new BaseProcess(p);
+			this.add(response.processes[i]);
 		}
+	}
+
+	add(process) {
+		this.processes[process.id] = new BaseProcess(process);
 	}
 
 	count() {

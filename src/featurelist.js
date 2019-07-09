@@ -72,7 +72,7 @@ var FeatureList = {
 		}
 	},
 
-    getListForVersion(version) {
+	getListForVersion(version) {
 		var list = {};
 		for(var feature in this.features) {
 			list[feature] = [];

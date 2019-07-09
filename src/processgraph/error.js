@@ -25,12 +25,16 @@ const MESSAGES = {
 
 module.exports = class ProcessGraphError extends Error {
 
-	constructor(code, variables = {}) {
+	constructor(codeOrMsg, variables = {}) {
 		super();
-		this.code = code;
 		this.variables = variables;
-		if (typeof MESSAGES[code] === 'string') {
-			this.message = Utils.replacePlaceholders(MESSAGES[code], variables);
+		if (typeof MESSAGES[codeOrMsg] === 'string') {
+			this.code = codeOrMsg;
+			this.message = Utils.replacePlaceholders(MESSAGES[codeOrMsg], variables);
+		}
+		else {
+			this.code = codeOrMsg.replace(/[^\w\d]+/g, '');
+			this.message = codeOrMsg;
 		}
 	}
 

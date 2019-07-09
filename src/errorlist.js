@@ -5,11 +5,15 @@ module.exports = class ErrorList {
 	}
 
 	first() {
-		return this.errors[0];
+		return this.errors[0] || null;
+	}
+
+	last() {
+		return this.errors[this.errors.length-1] || null;
 	}
 
 	merge(errorList) {
-		this.errors.concat(errorList.getAll());
+		this.errors = this.errors.concat(errorList.getAll());
 	}
 	
 	add(error) {

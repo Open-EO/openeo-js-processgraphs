@@ -8,10 +8,7 @@ const VARIABLE_TYPES = ['string', 'number', 'boolean', 'array', 'object'];
 module.exports = class ProcessGraph {
 
 	constructor(jsonProcessGraph, processRegistry) {
-		// Don't use deep merging libs as it may lead to circular reference errors with Vue.
-		// JSON parse/stringify is fine here as we have a simple JSON-like data type without native JS things
-		// like functions, classes etc. that would get destroyed by stringify.
-		this.json = JSON.parse(JSON.stringify(jsonProcessGraph));
+		this.json = jsonProcessGraph;
 		this.processRegistry = processRegistry;
 		this.nodes = [];
 		this.startNodes = {};
@@ -26,7 +23,6 @@ module.exports = class ProcessGraph {
 		this.parameters = {};
 	}
 
-	// Important: This avoids circular reference errors
 	toJSON() {
 		return this.json;
 	}
@@ -205,8 +201,15 @@ module.exports = class ProcessGraph {
 		}
 	}
 
-	parseCallbackArgument(/*node, name*/) {
-		// ToDo: Parse callback argument
+	parseCallbackArgument(node, name) {
+		var cbParams = this.getCallbackParameters();
+		if (!Utils.isObject(cbParams) || !cbParams.hasOwnProperty(name)) {
+			throw new ProcessGraphError('CallbackArgumentInvalid', {
+				argument: name,
+				node_id: node.id,
+				process_id: node.process_id
+			});
+		}
 	}
 
 	createProcessGraph(json, node, argumentName) {
@@ -326,10 +329,6 @@ module.exports = class ProcessGraph {
 		return this.nodes;
 	}
 
-	getJson() {
-		return this.json;
-	}
-
 	getErrors() {
 		return this.errors;
 	}
@@ -356,6 +355,7 @@ module.exports = class ProcessGraph {
 		// ToDo: If a process parameter supports multiple different callbacks, i.e. reduce with either an array of two separate values, this
 		// can't be separated accordingly and we just return all potential values. So it might happen that people get a successful validation
 		// but they used the wrong callback parameters.
+		// See issue https://github.com/Open-EO/openeo-js-commons/issues/6
 
 		var cbParams = {};
 		var choice = schema.anyOf || schema.oneOf || schema.allOf;

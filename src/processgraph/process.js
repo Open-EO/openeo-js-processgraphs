@@ -2,7 +2,6 @@ const JsonSchemaValidator = require('./jsonschema');
 const ProcessGraphError = require('./error');
 const ProcessGraphNode = require('./node');
 const ProcessGraph = require('./processgraph');
-const Utils = require('../utils');
 
 module.exports = class BaseProcess {
 
@@ -65,17 +64,8 @@ module.exports = class BaseProcess {
 				return true; // Parameter not set, nothing to validate against
 			case 'callback-argument':
 				var cbParams = node.getProcessGraph().getCallbackParameters();
-				if (Utils.isObject(cbParams) && cbParams.hasOwnProperty(arg.from_argument)) {
-					return JsonSchemaValidator.isSchemaCompatible(param.schema, cbParams[arg.from_argument]);
-				}
-				else {
-					throw new ProcessGraphError('CallbackArgumentInvalid', {
-						argument: arg.from_argument,
-						node_id: node.id,
-						process_id: this.schema.id
-					});
-				}
-				/* falls through */
+				// No need for further checks, callback argument is validated in processgraph.js: see parseCallbackArgument()
+				return JsonSchemaValidator.isSchemaCompatible(param.schema, cbParams[arg.from_argument]);
 			case 'variable':
 				var variableSchema = {
 					type: arg.type || 'string'
@@ -91,19 +81,23 @@ module.exports = class BaseProcess {
 				break;
 			case 'array':
 			case 'object':
-				for(var i in arg) {
-					await this.validateArgument(arg[i], node, parameterName);
-				}
-				return true; // ToDo: Remove this and check how we can validate arrays and objects that have references to callback arguments, variables and node results in them...
+				// ToDo: Check how we can validate arrays and objects that have references to callback arguments, variables and node results in them...
+				// See issue https://github.com/Open-EO/openeo-js-commons/issues/5
+//				for(var i in arg) {
+//					await this.validateArgument(arg[i], node, parameterName, param);
+//				}
+				return true;
 		}
 
 		return false;
 	}
 
+	/* istanbul ignore next */
 	async execute(/*node*/) {
 		throw "execute not implemented yet";
 	}
 
+	/* istanbul ignore next */
 	test() {
 		// Run the tests from the examples
 		throw "test not implemented yet";

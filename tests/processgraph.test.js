@@ -23,8 +23,14 @@ describe('Process Graph Tests', () => {
 		expect(absolute).toBeInstanceOf(BaseProcess);
 		expect(absolute.schema.id).toBe(processName);
 
+		var absoluteSchema = registry.getSchema(processName);
+		expect(absoluteSchema.id).toBe(processName);
+
 		var x = registry.get("unknown-process");
 		expect(x).toBeNull();
+
+		var x2 = registry.getSchema("unknown-process");
+		expect(x2).toBeNull();
 
 		var schemas = registry.getProcessSchemas();
 		expect(Array.isArray(schemas)).toBe(true);
@@ -36,6 +42,9 @@ describe('Process Graph Tests', () => {
 			var pg = new ProcessGraph({}, registry);
 			var errors = await pg.validate(false);
 			expect(errors.count()).toBeGreaterThan(0);
+			expect(pg.isValid()).toBe(false);
+			expect(pg.getErrors()).toStrictEqual(errors);
+			expect(pg.toJSON()).toStrictEqual({});
 		} catch(e) {
 			expect(e).toBeNull();
 		}
@@ -49,6 +58,10 @@ describe('Process Graph Tests', () => {
 				console.log(errors.getMessage());
 			}
 			expect(errors.count()).toBe(0);
+			expect(pg.isValid()).toBe(true);
+			expect(pg.getErrors()).toStrictEqual(errors);
+			expect(pg.getStartNodeIds()).toEqual(["dc"]);
+			expect(pg.toJSON()).toStrictEqual(ProcessGraphEVI);
 		} catch(e) {
 			expect(e).toBeNull();
 		}
