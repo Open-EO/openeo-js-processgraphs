@@ -30,6 +30,7 @@
     "jest-html-reporter": "^2.5.0",
     "jsdoc": "^3.5.5",
     "jshint": "^2.10.2",
+    "unminified-webpack-plugin": "^2.0.0",
     "webpack": "^4.30.0",
     "webpack-bundle-analyzer": "^3.3.2",
     "webpack-cli": "^3.2.1"
