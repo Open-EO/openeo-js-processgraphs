@@ -15,6 +15,7 @@ module.exports = class ProcessGraph {
 		this.resultNode = null;
 		this.childrenProcessGraphs = [];
 		this.parentNode = null;
+		this.parentProcessId = null;
 		this.parentParameterName = null;
 		this.variables = {};
 		this.parsed = false;
@@ -35,8 +36,15 @@ module.exports = class ProcessGraph {
 		return new ProcessGraph(json, this.processRegistry);
 	}
 
-	setParent(node, parameterName) {
-		this.parentNode = node;
+	setParent(parent, parameterName) {
+		if (parent instanceof ProcessGraphNode) {
+			this.parentNode = parent;
+			this.parentProcessId = parent.process_id;
+		}
+		else {
+			this.parentNode = null;
+			this.parentProcessId = parent;
+		}
 		this.parentParameterName = parameterName;
 	}
 
@@ -57,12 +65,27 @@ module.exports = class ProcessGraph {
 			this.nodes[id] = this.createNodeInstance(this.json[id], id, this);
 		}
 
+		var makeError = (errorId) => {
+			if (this.parentProcessId) {
+				return new ProcessGraphError(
+					errorId + 'Callback',
+					{
+						process_id: this.parentProcessId,
+						node_id: this.parentNode ? this.parentNode.id : 'N/A'
+					}
+				);
+			}
+			else {
+				return new ProcessGraphError(errorId);
+			}
+		};
+
 		for(let id in this.nodes) {
 			var node = this.nodes[id];
 
 			if (node.isResultNode) {
 				if (this.resultNode !== null) {
-					throw this.parentNode ? new ProcessGraphError('MultipleResultNodesCallback', {node_id: this.parentNode.id, process_id: this.parentNode.process_id}) : new ProcessGraphError('MultipleResultNodes');
+					throw makeError('MultipleResultNodes');
 				}
 				this.resultNode = node;
 			}
@@ -71,10 +94,10 @@ module.exports = class ProcessGraph {
 		}
 
 		if (!this.findStartNodes()) {
-			throw this.parentNode ? new ProcessGraphError('StartNodeMissingCallback', {node_id: this.parentNode.id, process_id: this.parentNode.process_id}) : new ProcessGraphError('StartNodeMissing');
+			throw makeError('StartNodeMissing');
 		}
 		if (this.resultNode === null) {
-			throw this.parentNode ? new ProcessGraphError('ResultNodeMissingCallback', {node_id: this.parentNode.id, process_id: this.parentNode.process_id}) : new ProcessGraphError('ResultNodeMissing');
+			throw makeError('ResultNodeMissing');
 		}
 
 		this.parsed = true;
@@ -341,12 +364,16 @@ module.exports = class ProcessGraph {
 		return process;
 	}
 
+	getParentProcess() {
+		return this.processRegistry.get(this.parentProcessId);
+	}
+
 	getCallbackParameters() {
-		if (!this.parentNode || !this.parentParameterName) {
+		var process = this.getParentProcess();
+		if (!this.parentParameterName || !process) {
 			return {};
 		}
 
-		var process = this.getProcess(this.parentNode);
 		var schema = process.schema.parameters[this.parentParameterName].schema;
 		if (Utils.isObject(schema.parameters)) {
 			return schema.parameters;
