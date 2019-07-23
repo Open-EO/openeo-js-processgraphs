@@ -115,6 +115,9 @@ module.exports = class ProcessGraph {
 			this.parse();
 		} catch (error) {
 			this.addError(error);
+			if (throwOnErrors) {
+				throw error;
+			}
 		}
 
 		// Validate
@@ -130,7 +133,7 @@ module.exports = class ProcessGraph {
 		return this.getResultNode();
 	}
 
-	async validateNodes(nodes, throwsOnErrors, previousNode = null) {
+	async validateNodes(nodes, throwOnErrors, previousNode = null) {
 		if (nodes.length === 0) {
 			return;
 		}
@@ -147,18 +150,18 @@ module.exports = class ProcessGraph {
 			} catch (e) {
 				if (e instanceof ErrorList) {
 					this.errors.merge(e);
-					if (throwsOnErrors) {
+					if (throwOnErrors) {
 						throw e.first();
 					}
 				}
 				else {
 					this.addError(e);
-					if (throwsOnErrors) {
+					if (throwOnErrors) {
 						throw e;
 					}
 				}
 			}
-			await this.validateNodes(node.getNextNodes(), throwsOnErrors, node);
+			await this.validateNodes(node.getNextNodes(), throwOnErrors, node);
 		});
 
 		await Promise.all(promises);

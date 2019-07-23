@@ -41,7 +41,7 @@ var MigrateCapabilities = {
 
         // Add missing fields with somewhat useful data
         if (typeof capabilities.api_version !== 'string') {
-            capabilities.api_version = "0.4.0";
+            capabilities.api_version = "0.4.2";
         }
         if (typeof capabilities.backend_version !== 'string') {
             capabilities.backend_version = "Unknown";

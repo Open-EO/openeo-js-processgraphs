@@ -28,7 +28,7 @@ var legacyCapability =  {
 };
 
 var emptyCapability =  {
-	"api_version": "0.4.0",
+	"api_version": "0.4.2",
 	"backend_version": "Unknown",
 	"title": "Unknown",
 	"description": "No description provided.",
@@ -152,7 +152,7 @@ var serviceTypes = {
 describe('Basic Capabilities Migration Tests', () =>  {
 	test('Guess Api Versions', () =>  {
 		expect(MigrateCapabilities.guessApiVersion(legacyCapability)).toBe("0.3.1"); 
-		expect(MigrateCapabilities.guessApiVersion(emptyCapability)).toBe("0.4.0"); 
+		expect(MigrateCapabilities.guessApiVersion(emptyCapability)).toBe("0.4.2"); 
 	}); 
 	test('Migrate Capabilities', () =>  {
 		expect(MigrateCapabilities.convertCapabilitiesToLatestSpec({})).toEqual(emptyCapability);
