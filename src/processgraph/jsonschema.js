@@ -269,7 +269,8 @@ module.exports = class JsonSchemaValidator {
 
 	// Checks whether the valueSchema is compatible to the paramSchema.
 	// So would a value compatible with valueSchema be accepted by paramSchema?
-	static isSchemaCompatible(paramSchema, valueSchema, strict = false) {
+	// allowValueAsElements: If true, it checks whether the valueSchema would be allowed as part of an array or object. For example number could be allowed as part of an array of numbers.
+	static isSchemaCompatible(paramSchema, valueSchema, strict = false, allowValueAsElements = false) {
 		var paramSchemas = this._convertSchemaToArray(paramSchema);
 		var valueSchemas = this._convertSchemaToArray(valueSchema);
 
@@ -279,14 +280,18 @@ module.exports = class JsonSchemaValidator {
 				if (typeof ps.type !== 'string' || (!strict && typeof vs.type !== 'string')) { // "any" type is always compatible
 					return true;
 				}
-				else if (ps.type === vs.type || (ps.type === 'number' && vs.type === 'integer') || (!strict && ps.type === 'integer' && vs.type === 'number')) {
+				else if (ps.type === vs.type || (allowValueAsElements && (ps.type === 'array' || ps.type === 'object')) || (ps.type === 'number' && vs.type === 'integer') || (!strict && ps.type === 'integer' && vs.type === 'number')) {
 					if (ps.type === 'array' && Utils.isObject(ps.items) && Utils.isObject(vs.items))  {
-						if (JsonSchemaValidator.isSchemaCompatible(ps.items, vs.items, strict)) {
+						if (allowValueAsElements && JsonSchemaValidator.isSchemaCompatible(ps.items, vs, strict)) {
+							return true;
+						}
+						else if (JsonSchemaValidator.isSchemaCompatible(ps.items, vs.items, strict)) {
 							return true;
 						}
 					}
 					else if (ps.type === 'object' && Utils.isObject(ps.properties) && Utils.isObject(vs.properties)) {
 						// ToDo: Check properties, required properties etc.
+						// If allowValueAsElements is true, all types are allowed to be part of the object.
 						return true;
 					}
 					else if (!strict && (typeof ps.format !== 'string' || typeof vs.format !== 'string')) {

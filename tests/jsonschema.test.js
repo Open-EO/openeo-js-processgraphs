@@ -1,4 +1,5 @@
 const JsonSchemaValidator = require('../src/processgraph/jsonschema');
+const geoJsonSchemaFull = require('./GeoJSON.json');
 
 describe('JSON Schema Validator Tests', () => {
 
@@ -71,7 +72,7 @@ describe('JSON Schema Validator Tests', () => {
 	};
 	var geoJsonExampleSuccessFeatureCollection = {
 		"type": "FeatureCollection",
-		"features": null
+		"features": []
 	};
 	var geoJsonExampleFail1 = {
 		"type": "FeatureCollection"
@@ -94,15 +95,15 @@ describe('JSON Schema Validator Tests', () => {
 	var geoJsonExampleFail5 = Object.assign({}, geoJsonExampleSuccessFeatureCollection, {properties: {}});
 	test('geojson (simple)', async () => {
 		errors = await v.validateJson(geoJsonExampleSuccessPoint, geoJsonSchema);
-		expect(errors.length).toBe(0);
+		expect(errors).toEqual([]);
 		errors = await v.validateJson(geoJsonExampleSuccessPolygon, geoJsonSchema);
-		expect(errors.length).toBe(0);
+		expect(errors).toEqual([]);
 		errors = await v.validateJson(geoJsonExampleSuccessGeomColl, geoJsonSchema);
-		expect(errors.length).toBe(0);
+		expect(errors).toEqual([]);
 		errors = await v.validateJson(geoJsonExampleSuccessFeature, geoJsonSchema);
-		expect(errors.length).toBe(0);
+		expect(errors).toEqual([]);
 		errors = await v.validateJson(geoJsonExampleSuccessFeatureCollection, geoJsonSchema);
-		expect(errors.length).toBe(0);
+		expect(errors).toEqual([]);
 /*		errors = await v.validateJson(geoJsonExampleFail1, geoJsonSchema);
 		expect(errors.length).toBeGreaterThan(0);
 		errors = await v.validateJson(geoJsonExampleFail2, geoJsonSchema);
@@ -110,19 +111,18 @@ describe('JSON Schema Validator Tests', () => {
 		errors = await v.validateJson(geoJsonExampleFail3, geoJsonSchema);
 		expect(errors.length).toBeGreaterThan(0); */
 	});
-	var geoJsonSchemaFull = require('./GeoJSON.json');
 	test('geojson (full)', async () => {
 		v.setGeoJsonSchema(geoJsonSchemaFull);
 		errors = await v.validateJson(geoJsonExampleSuccessPoint, geoJsonSchema);
-		expect(errors.length).toBe(0);
+		expect(errors).toEqual([]);
 		errors = await v.validateJson(geoJsonExampleSuccessPolygon, geoJsonSchema);
-		expect(errors.length).toBe(0);
+		expect(errors).toEqual([]);
 		errors = await v.validateJson(geoJsonExampleSuccessGeomColl, geoJsonSchema);
-		expect(errors.length).toBe(0);
+		expect(errors).toEqual([]);
 		errors = await v.validateJson(geoJsonExampleSuccessFeature, geoJsonSchema);
-		expect(errors.length).toBe(0);
+		expect(errors).toEqual([]);
 		errors = await v.validateJson(geoJsonExampleSuccessFeatureCollection, geoJsonSchema);
-		expect(errors.length).toBe(0);
+		expect(errors).toEqual([]);
 /*		errors = await v.validateJson(geoJsonExampleFail1, geoJsonSchema);
 		expect(errors.length).toBeGreaterThan(0);
 		errors = await v.validateJson(geoJsonExampleFail2, geoJsonSchema);
@@ -219,6 +219,8 @@ describe('JSON Schema Validator Tests', () => {
 		expect(await JsonSchemaValidator.isSchemaCompatible(dataCubeType, vectorCubeType)).toBeTruthy();
 		expect(await JsonSchemaValidator.isSchemaCompatible(rasterCubeType, dataCubeType)).toBeTruthy();
 		expect(await JsonSchemaValidator.isSchemaCompatible(rasterCubeType, vectorCubeType)).toBeFalsy();
+		expect(await JsonSchemaValidator.isSchemaCompatible(arrayOfNumbers, numberNullType, false, false)).toBeFalsy();
+		expect(await JsonSchemaValidator.isSchemaCompatible(arrayOfNumbers, numberNullType, false, true)).toBeTruthy();
 	});
 
   });
