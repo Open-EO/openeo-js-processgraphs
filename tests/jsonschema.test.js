@@ -24,10 +24,10 @@ describe('JSON Schema Validator Tests', () => {
 		expect(errors.length).toBe(0);
 		errors = await v.validateJson(69036405, epsgSchema);
 		expect(errors.length).toBe(0);
-/*		errors = await v.validateJson(0, epsgSchema);
+		errors = await v.validateJson(0, epsgSchema);
 		expect(errors.length).toBeGreaterThan(0);
 		errors = await v.validateJson(-4326, epsgSchema);
-		expect(errors.length).toBeGreaterThan(0); */
+		expect(errors.length).toBeGreaterThan(0);
 	});
 
 	var geoJsonSchema = {
@@ -104,35 +104,41 @@ describe('JSON Schema Validator Tests', () => {
 		expect(errors).toEqual([]);
 		errors = await v.validateJson(geoJsonExampleSuccessFeatureCollection, geoJsonSchema);
 		expect(errors).toEqual([]);
-/*		errors = await v.validateJson(geoJsonExampleFail1, geoJsonSchema);
+		errors = await v.validateJson(geoJsonExampleFail1, geoJsonSchema);
 		expect(errors.length).toBeGreaterThan(0);
 		errors = await v.validateJson(geoJsonExampleFail2, geoJsonSchema);
 		expect(errors.length).toBeGreaterThan(0);
 		errors = await v.validateJson(geoJsonExampleFail3, geoJsonSchema);
-		expect(errors.length).toBeGreaterThan(0); */
+		expect(errors.length).toBeGreaterThan(0);
 	});
+
 	test('geojson (full)', async () => {
 		v.setGeoJsonSchema(geoJsonSchemaFull);
-		errors = await v.validateJson(geoJsonExampleSuccessPoint, geoJsonSchema);
-		expect(errors).toEqual([]);
-		errors = await v.validateJson(geoJsonExampleSuccessPolygon, geoJsonSchema);
-		expect(errors).toEqual([]);
-		errors = await v.validateJson(geoJsonExampleSuccessGeomColl, geoJsonSchema);
-		expect(errors).toEqual([]);
-		errors = await v.validateJson(geoJsonExampleSuccessFeature, geoJsonSchema);
-		expect(errors).toEqual([]);
-		errors = await v.validateJson(geoJsonExampleSuccessFeatureCollection, geoJsonSchema);
-		expect(errors).toEqual([]);
-/*		errors = await v.validateJson(geoJsonExampleFail1, geoJsonSchema);
-		expect(errors.length).toBeGreaterThan(0);
-		errors = await v.validateJson(geoJsonExampleFail2, geoJsonSchema);
-		expect(errors.length).toBeGreaterThan(0);
-		errors = await v.validateJson(geoJsonExampleFail3, geoJsonSchema);
-		expect(errors.length).toBeGreaterThan(0);
-		errors = await v.validateJson(geoJsonExampleFail4, geoJsonSchema);
-		expect(errors.length).toBeGreaterThan(0);
-		errors = await v.validateJson(geoJsonExampleFail5, geoJsonSchema);
-		expect(errors.length).toBeGreaterThan(0); */
+		try {
+			errors = await v.validateJson(geoJsonExampleSuccessPoint, geoJsonSchema);
+			expect(errors).toEqual([]);
+			errors = await v.validateJson(geoJsonExampleSuccessPolygon, geoJsonSchema);
+			expect(errors).toEqual([]);
+			errors = await v.validateJson(geoJsonExampleSuccessGeomColl, geoJsonSchema);
+			expect(errors).toEqual([]);
+			errors = await v.validateJson(geoJsonExampleSuccessFeature, geoJsonSchema);
+			expect(errors).toEqual([]);
+			errors = await v.validateJson(geoJsonExampleSuccessFeatureCollection, geoJsonSchema);
+			expect(errors).toEqual([]);
+			errors = await v.validateJson(geoJsonExampleFail1, geoJsonSchema);
+			expect(errors.length).toBeGreaterThan(0);
+			errors = await v.validateJson(geoJsonExampleFail2, geoJsonSchema);
+			expect(errors.length).toBeGreaterThan(0);
+			errors = await v.validateJson(geoJsonExampleFail3, geoJsonSchema);
+			expect(errors.length).toBeGreaterThan(0);
+			errors = await v.validateJson(geoJsonExampleFail4, geoJsonSchema);
+			expect(errors.length).toBeGreaterThan(0);
+// Currently not properly covered by the official GeoJSON schema
+//			errors = await v.validateJson(geoJsonExampleFail5, geoJsonSchema);
+//			expect(errors.length).toBeGreaterThan(0);
+		} catch (error) {
+			expect(error).toBeUndefined();
+		}
 	});
 
 	var outputFormats = {
@@ -186,12 +192,21 @@ describe('JSON Schema Validator Tests', () => {
 	var rasterCubeType = {type: "object",format: "raster-cube"};
 	var vectorCubeType = {type: "object",format: "vector-cube"};
 	var dataCubeType = {anyOf: [rasterCubeType, vectorCubeType]};
+	var load_collection_spatial_extent = [
+		{"title":"Bounding Box","type":"object","format":"bounding-box","required":["west","south","east","north"],"properties":{"west":{"description":"West (lower left corner, coordinate axis 1).","type":"number"},"south":{"description":"South (lower left corner, coordinate axis 2).","type":"number"},"east":{"description":"East (upper right corner, coordinate axis 1).","type":"number"},"north":{"description":"North (upper right corner, coordinate axis 2).","type":"number"},"base":{"description":"Base (optional, lower left corner, coordinate axis 3).","type":["number","null"],"default":null},"height":{"description":"Height (optional, upper right corner, coordinate axis 3).","type":["number","null"],"default":null},"crs":{"description":"Coordinate reference system of the extent specified as EPSG code or PROJ definition. Whenever possible, it is recommended to use EPSG codes instead of PROJ definitions. Defaults to `4326` (EPSG code 4326) unless the client explicitly requests a different coordinate reference system.","schema":{"title":"EPSG Code","type":"integer","format":"epsg-code","examples":[7099],"default":4326}}}},
+		{"title":"GeoJSON Polygon(s)","type":"object","format":"geojson"},
+		{"type":"null"}
+	];
 
 	test('getTypeForValue', async () => {
 		expect(await JsonSchemaValidator.getTypeForValue([stringType, nullType], null)).toBe("1");
 		expect(await JsonSchemaValidator.getTypeForValue([stringType, nullType], "Test")).toBe("0");
 		expect(await JsonSchemaValidator.getTypeForValue([stringType, nullType], 123)).toBeUndefined();
 		expect(await JsonSchemaValidator.getTypeForValue({nil: nullType, string: stringType, datetime: dateTimeType}, "2019-01-01T00:00:00Z")).toStrictEqual(["string","datetime"]);
+
+		expect(await JsonSchemaValidator.getTypeForValue(load_collection_spatial_extent, {"west":-2.7634,"south":43.0408,"east":-1.121,"north":43.8385})).toBe("0");
+		expect(await JsonSchemaValidator.getTypeForValue(load_collection_spatial_extent, {"type": "Polygon","coordinates": [[[100.0, 0.0],[101.0, 0.0],[101.0, 1.0],[100.0, 1.0],[100.0, 0.0]]]})).toBe("1");
+		expect(await JsonSchemaValidator.getTypeForValue(load_collection_spatial_extent, null)).toBe("2");
 	});
 
 	test('isSchemaCompatible', async () => {

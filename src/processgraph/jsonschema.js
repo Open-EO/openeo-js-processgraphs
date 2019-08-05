@@ -4,29 +4,29 @@ const Utils = require('../utils');
 module.exports = class JsonSchemaValidator {
 
 	constructor() {
+		this.typeHints = {
+			'band-name': {type: 'string', validate: 'validateBandName'},
+			'bounding-box': {type: 'object', validate: 'validateBoundingBox'},
+			'callback': {type: 'object', validate: 'validateCallback'},
+			'collection-id': {type: 'string', validate: 'validateCollectionId'},
+			'epsg-code': {type: 'integer', validate: 'validateEpsgCode'},
+			'geojson': {type: 'object', validate: 'validateGeoJson'},
+			'job-id': {type: 'string', validate: 'validateJobId'},
+			'kernel': {type: 'array', validate: 'validateKernel'},
+			'output-format': {type: 'string', validate: 'validateOutputFormat'},
+			'output-format-options': {type: 'array', validate: 'validateOutputFormatOptions'},
+			'process-graph-id': {type: 'string', validate: 'validateProcessGraphId'},
+			'process-graph-variables': {type: 'array', validate: 'validateProcessGraphVariables'},
+			'proj-definition': {type: 'string', validate: 'validateProjDefinition'},
+			'raster-cube': {type: 'object', validate: 'validateRasterCube'},
+			'temporal-interval': {type: 'array', validate: 'validateTemporalInterval'},
+			'temporal-intervals': {type: 'array', validate: 'validateTemporalIntervals'},
+			'vector-cube': {type: 'object', validate: 'validateVectorCube'}
+		};
 		var ajvOptions = {
 			schemaId: 'auto',
 			format: 'full',
-			formats: {
-				// See issue https://github.com/Open-EO/openeo-js-commons/issues/4 for information on why ajv doesn't support non-string validation
-				'band-name': {type: 'string', async: true, validate: this.validateBandName.bind(this)},
-				'bounding-box': {type: 'object', async: true, validate: this.validateBoundingBox.bind(this)}, // Currently not supported by ajv 6.10
-				'callback': {type: 'object', async: true, validate: this.validateCallback.bind(this)}, // Currently not supported by ajv 6.10
-				'collection-id': {type: 'string', async: true, validate: this.validateCollectionId.bind(this)},
-				'epsg-code': {type: 'integer', async: true, validate: this.validateEpsgCode.bind(this)}, // Currently not supported by ajv 6.10
-				'geojson': {type: 'object', async: true, validate: this.validateGeoJson.bind(this)}, // Currently not supported by ajv 6.10
-				'job-id': {type: 'string', async: true, validate: this.validateJobId.bind(this)},
-				'kernel': {type: 'array', async: true, validate: this.validateKernel.bind(this)}, // Currently not supported by ajv 6.10
-				'output-format': {type: 'string', async: true, validate: this.validateOutputFormat.bind(this)},
-				'output-format-options': {type: 'array', async: true, validate: this.validateOutputFormatOptions.bind(this)}, // Currently not supported by ajv 6.10
-				'process-graph-id': {type: 'string', async: true, validate: this.validateProcessGraphId.bind(this)},
-				'process-graph-variables': {type: 'array', async: true, validate: this.validateProcessGraphVariables.bind(this)}, // Currently not supported by ajv 6.10
-				'proj-definition': {type: 'string', async: true, validate: this.validateProjDefinition.bind(this)},
-				'raster-cube': {type: 'object', async: true, validate: this.validateRasterCube.bind(this)}, // Currently not supported by ajv 6.10
-				'temporal-interval': {type: 'array', async: true, validate: this.validateTemporalInterval.bind(this)}, // Currently not supported by ajv 6.10
-				'temporal-intervals': {type: 'array', async: true, validate: this.validateTemporalIntervals.bind(this)}, // Currently not supported by ajv 6.10
-				'vector-cube': {type: 'object', async: true, validate: this.validateVectorCube.bind(this)} // Currently not supported by ajv 6.10
-			}
+			unknownFormats: Object.keys(this.typeHints)
 		};
 		this.ajv = new ajv(ajvOptions);
 		this.ajv.addKeyword('parameters', {
@@ -43,22 +43,64 @@ module.exports = class JsonSchemaValidator {
 			valid: true,
 			errors: true
 		});
+		this.ajv.addKeyword('typehint', {
+			dependencies: [
+				"type"
+			],
+			validate: async (typehint, data, schema) => {
+				if (typeof this.typeHints[typehint] === 'object') {
+					var th = this.typeHints[typehint];
+					if (th.type === schema.type || (Array.isArray(schema.type) && schema.type.includes(th.type))) {
+						return await this[th.validate](data);
+					}
+				}
+				return false;
+			},
+			async: true,
+			errors: true
+		});
 
 		this.outputFormats = null;
 		this.geoJsonValidator = null;
 	}
 
-	async validateJson(json, schema) {
-		 // Make sure we don't alter the process registry
-		var clonedSchema = Object.assign({}, schema);
-		clonedSchema.$async = true;
-		if (typeof clonedSchema.$schema === 'undefined') {
-			// Set applicable JSON Schema draft version if not already set
-			clonedSchema.$schema = "http://json-schema.org/draft-07/schema#";
+	/* This is a temporary workaround for the following issues:
+		- https://github.com/epoberezkin/ajv/issues/1039
+		- https://github.com/Open-EO/openeo-processes/issues/67 
+		Once one of the issues is solved, fixSchema can be removed.
+	*/
+	fixSchemaFormat(s) {
+		for(var i in s) {
+			if (i === 'format' && typeof s[i] === 'string' && Object.keys(this.typeHints).includes(s[i])) {
+				s.typehint = s[i];
+			}
+			if (s[i] && typeof s[i] === 'object') {
+				s[i] = this.fixSchemaFormat(s[i]);
+			}
+		}
+		return s;
+	}
+
+	fixSchema(s) {
+		s = JSON.parse(JSON.stringify(s));
+
+		// Set applicable JSON Schema draft version if not already set
+		if (typeof s.$schema === 'undefined') {
+			s.$schema = "http://json-schema.org/draft-07/schema#";
 		}
 
+		// format => typehint (see above)
+		s = this.fixSchemaFormat(s);
+
+		return s;
+	}
+
+	async validateJson(json, schema) {
+		schema = this.fixSchema(schema);
+		schema.$async = true;
+
 		try {
-			await this.ajv.validate(clonedSchema, json);
+			await this.ajv.validate(schema, json);
 			return [];
 		} catch (e) {
 			if (Array.isArray(e.errors)) {
@@ -71,12 +113,8 @@ module.exports = class JsonSchemaValidator {
 	}
 
 	validateJsonSchema(schema) {
-		// Set applicable JSON SChema draft version if not already set
-		if (typeof schema.$schema === 'undefined') {
-			schema = Object.assign({}, schema); // Make sure we don't alter the process registry
-			schema.$schema = "http://json-schema.org/draft-07/schema#";
-		}
-	
+		schema = JSON.parse(JSON.stringify(schema));
+		schema = this.fixSchema(schema);
 		let result = this.ajv.compile(schema);
 		return result.errors || [];
 	}
@@ -136,7 +174,7 @@ module.exports = class JsonSchemaValidator {
 	async validateGeoJson(data) {
 		if (this.geoJsonValidator !== null) {
 			if (!this.geoJsonValidator(data)) {
-				throw new ajv.ValidationError(ajv.errors);
+				throw new ajv.ValidationError(this.geoJsonValidator.errors);
 			}
 			return true;
 		}
