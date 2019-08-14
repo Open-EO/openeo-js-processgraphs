@@ -3,7 +3,7 @@ A set of common JavaScript functionalities for [openEO](http://openeo.org).
 
 [![Build Status](https://travis-ci.org/Open-EO/openeo-js-commons.svg?branch=master)](https://travis-ci.org/Open-EO/openeo-js-commons)
 
-This library's version is **0.4.3** and supports **openEO API version 0.4.x**. Legacy versions are available as releases.
+This library's version is **0.4.5** and supports **openEO API version 0.4.x**. Legacy versions are available as releases.
 
 ## Features
 - Converting responses to the latest API version is supported for:
@@ -37,4 +37,4 @@ This library has a peer dependency to `ajv`, so if you'd like to use process gra
 <script src="https://cdn.jsdelivr.net/npm/ajv@6.10/lib/ajv.min.js"></script>
 ```
 
-More information can be found in the [**JS commons documentation**](https://open-eo.github.io/openeo-js-commons/0.4.3/).
+More information can be found in the [**JS commons documentation**](https://open-eo.github.io/openeo-js-commons/0.4.5/).

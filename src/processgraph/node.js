@@ -18,6 +18,7 @@ module.exports = class ProcessGraphNode {
 		this.processGraph = parent;
 		this.process_id = json.process_id;
 		this.arguments = Utils.isObject(json.arguments) ? JSON.parse(JSON.stringify(json.arguments)) : {};
+		this.description = json.description || null;
 		this.isResultNode = json.result || false;
 		this.expectsFrom = [];
 		this.passesTo = [];
@@ -138,6 +139,15 @@ module.exports = class ProcessGraphNode {
 	reset() {
 		this.result = null;
 		this.resultsAvailableFrom = [];
+	}
+
+	setDescription(description) {
+		if (typeof description === 'string') {
+			this.description = description;
+		}
+		else {
+			this.description = null;
+		}
 	}
 
 	setResult(result) {
