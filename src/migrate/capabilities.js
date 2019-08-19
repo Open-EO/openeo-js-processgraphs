@@ -111,6 +111,13 @@ var MigrateCapabilities = {
             // Nothing to do as nothing has changed.
         }
         return types;
+    },
+
+    // Always returns a copy of the input object
+    convertUdfRuntimesToLatestSpec(originalRuntimes, version) {
+        var runtimes = Object.assign({}, originalRuntimes);
+        // Not supported in v0.3, nothing to change
+        return runtimes;
     }
 
 };
