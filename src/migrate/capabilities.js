@@ -116,7 +116,9 @@ var MigrateCapabilities = {
     // Always returns a copy of the input object
     convertUdfRuntimesToLatestSpec(originalRuntimes, version) {
         var runtimes = Object.assign({}, originalRuntimes);
-        // Not supported in v0.3, nothing to change
+        if (Utils.compareVersion(version, "0.3.x") === 0) {
+            // Nothing to do, was not supported in 0.3.
+        }
         return runtimes;
     }
 
