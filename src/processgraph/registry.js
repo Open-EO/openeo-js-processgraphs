@@ -23,9 +23,11 @@ module.exports = class ProcessRegistry {
 	}
 	
 	get(id) {
-		var pid = id.toLowerCase();
-		if (typeof this.processes[pid] !== 'undefined') {
-			return this.processes[pid];
+		if (typeof id === 'string') {
+			var pid = id.toLowerCase();
+			if (typeof this.processes[pid] !== 'undefined') {
+				return this.processes[pid];
+			}
 		}
 		return null;
 	}
