@@ -10,7 +10,7 @@ module.exports = class ProcessGraph {
 	constructor(jsonProcessGraph, processRegistry) {
 		this.json = jsonProcessGraph;
 		this.processRegistry = processRegistry;
-		this.nodes = [];
+		this.nodes = {};
 		this.startNodes = {};
 		this.resultNode = null;
 		this.childrenProcessGraphs = [];
