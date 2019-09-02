@@ -171,6 +171,65 @@ module.exports = class JsonSchemaValidator {
 		}]);
 	}
 
+	// A very rough GeoJSON validation if no GeoJSON schema is available.
+	validateGeoJsonSimple(data) {
+		if (!Utils.isObject(data)) {
+			throw new ajv.ValidationError([{
+				message: "Invalid GeoJSON specified (not an object)."
+			}]);
+		}
+		else if (typeof data.type !== 'string') {
+			throw new ajv.ValidationError([{
+				message: "Invalid GeoJSON specified (no type property)."
+			}]);
+		}
+
+		switch(data.type) {
+			case "Point":
+			case "MultiPoint":
+			case "LineString":
+			case "MultiLineString":
+			case "Polygon":
+			case "MultiPolygon":
+				if (!Array.isArray(data.coordinates)) {
+					throw new ajv.ValidationError([{
+						message: "Invalid GeoJSON specified (Geometry has no valid coordinates member)."
+					}]);
+				}
+				return true;
+			case "GeometryCollection":
+				if (!Array.isArray(data.geometries)) {
+					throw new ajv.ValidationError([{
+						message: "Invalid GeoJSON specified (GeometryCollection has no valid geometries member)."
+					}]);
+				}
+				return true;
+			case "Feature":
+				if (data.geometry !== null && !Utils.isObject(data.geometry)) {
+					throw new ajv.ValidationError([{
+						message: "Invalid GeoJSON specified (Feature has no valid geometry member)."
+					}]);
+				}
+				if (data.properties !== null && !Utils.isObject(data.properties)) {
+					throw new ajv.ValidationError([{
+						message: "Invalid GeoJSON specified (Feature has no valid properties member)."
+					}]);
+				}
+				return true;
+			case "FeatureCollection":
+				if (!Array.isArray(data.features)) {
+					throw new ajv.ValidationError([{
+						message: "Invalid GeoJSON specified (FeatureCollection has no valid features member)."
+					}]);
+				}
+				return true;
+			default:
+				throw new ajv.ValidationError([{
+					message: "Invalid GeoJSON type specified."
+				}]);
+		}
+	}
+
 	async validateGeoJson(data) {
 		if (this.geoJsonValidator !== null) {
 			if (!this.geoJsonValidator(data)) {
@@ -179,57 +238,7 @@ module.exports = class JsonSchemaValidator {
 			return true;
 		}
 		else {
-			// A very rough GeoJSON validation if no GeoJSON schema is available.
-			if (typeof data.type !== 'string') {
-				throw new ajv.ValidationError([{
-					message: "Invalid GeoJSON specified (no type property)."
-				}]);
-			}
-
-			switch(data.type) {
-				case "Point":
-				case "MultiPoint":
-				case "LineString":
-				case "MultiLineString":
-				case "Polygon":
-				case "MultiPolygon":
-					if (!Array.isArray(data.coordinates)) {
-						throw new ajv.ValidationError([{
-							message: "Invalid GeoJSON specified (Geometry has no valid coordinates member)."
-						}]);
-					}
-					return true;
-				case "GeometryCollection":
-					if (!Array.isArray(data.geometries)) {
-						throw new ajv.ValidationError([{
-							message: "Invalid GeoJSON specified (GeometryCollection has no valid geometries member)."
-						}]);
-					}
-					return true;
-				case "Feature":
-					if (data.geometry !== null && !Utils.isObject(data.geometry)) {
-						throw new ajv.ValidationError([{
-							message: "Invalid GeoJSON specified (Feature has no valid geometry member)."
-						}]);
-					}
-					if (data.properties !== null && !Utils.isObject(data.properties)) {
-						throw new ajv.ValidationError([{
-							message: "Invalid GeoJSON specified (Feature has no valid properties member)."
-						}]);
-					}
-					return true;
-				case "FeatureCollection":
-					if (!Array.isArray(data.features)) {
-						throw new ajv.ValidationError([{
-							message: "Invalid GeoJSON specified (FeatureCollection has no valid features member)."
-						}]);
-					}
-					return true;
-				default:
-					throw new ajv.ValidationError([{
-						message: "Invalid GeoJSON type specified."
-					}]);
-			}
+			return this.validateGeoJsonSimple(data);
 		}
 	}
 
