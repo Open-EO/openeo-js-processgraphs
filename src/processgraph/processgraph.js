@@ -351,6 +351,10 @@ module.exports = class ProcessGraph {
 		return this.nodes[nodeId];
 	}
 
+	getNodeCount() {
+		return Utils.size(this.nodes);
+	}
+
 	getNodes() {
 		return this.nodes;
 	}
