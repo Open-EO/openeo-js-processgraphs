@@ -14,6 +14,8 @@ module.exports = {
   },
   plugins: [
     new UnminifiedWebpackPlugin(),
-    new BundleAnalyzerPlugin()
+    new BundleAnalyzerPlugin({
+      analyzerMode: 'static'
+    })
   ],
 };

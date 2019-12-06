@@ -2,23 +2,17 @@ const Utils = require('../utils.js');
 
 var MigrateCollections = {
 
-    guessCollectionSpecVersion(c) {
-        var version = "0.4";
-        // Try to guess a version
-        if (typeof c.id === 'undefined' && typeof c.name !== 'undefined') { // No id defined, probably v0.3
-            version = "0.3";
-        }
-        return version;
-    },
-
     // Always returns a copy of the input collection object
-    convertCollectionToLatestSpec(originalCollection, version = null) {
+    convertCollectionToLatestSpec(originalCollection, version) {
+        if (!version || typeof version !== 'string') {
+            throw new Error("No version specified");
+        }
+        if (Utils.compareVersion(version, "0.5.x") >= 0) {
+            throw "Migrating collections from API version 0.4.0 is not supported yet";
+        }
         var collection = Object.assign({}, originalCollection);
         if (!Object.keys(collection).length) {
             return collection;
-        }
-        if (version === null) {
-            version = this.guessCollectionSpecVersion(collection);
         }
         // convert v0.3 processes to v0.4 format
         if (Utils.compareVersion(version, "0.3.x") === 0) {

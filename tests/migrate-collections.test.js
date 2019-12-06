@@ -123,20 +123,15 @@ var expectedCollection = Object.assign({}, expectedMinimalCollection, {
 });
 
 describe('Basic Collection Migration Tests', () => {
-	test('Guess Collection Spec Versions', () => {
-		expect(MigrateCollections.guessCollectionSpecVersion(legacyCollection)).toBe("0.3");
-		expect(MigrateCollections.guessCollectionSpecVersion(expectedCollection)).toBe("0.4");
-	});
 	test('Migrate Collection', () => {
-		expect(MigrateCollections.convertCollectionToLatestSpec({})).toEqual({});
+		expect(() => MigrateCollections.convertCollectionToLatestSpec({})).toThrow("No version specified");
 		expect(MigrateCollections.convertCollectionToLatestSpec({}, "0.3.0")).toEqual({});
 		// Test that a legacy collection gets converted
-		expect(MigrateCollections.convertCollectionToLatestSpec(legacyMinimalCollection)).toEqual(expectedMinimalCollection);
+		expect(MigrateCollections.convertCollectionToLatestSpec(legacyMinimalCollection, "0.3.0")).toEqual(expectedMinimalCollection);
 		expect(MigrateCollections.convertCollectionToLatestSpec(legacyBandCollection, "0.3.0")).toEqual(expectedBandCollection);
-		expect(MigrateCollections.convertCollectionToLatestSpec(legacyCollection)).toEqual(expectedCollection);
 		expect(MigrateCollections.convertCollectionToLatestSpec(legacyCollection, "0.3.1")).toEqual(expectedCollection);
 		// Test that a collection following the latest spec doesn't change at all
-		expect(MigrateCollections.convertCollectionToLatestSpec(expectedCollection)).toEqual(expectedCollection);
 		expect(MigrateCollections.convertCollectionToLatestSpec(expectedCollection, "0.4.0")).toEqual(expectedCollection);
+		expect(MigrateCollections.convertCollectionToLatestSpec(expectedCollection, "0.4.1")).toEqual(expectedCollection);
 	});
 });

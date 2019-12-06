@@ -1,4 +1,7 @@
-const ajv = require('ajv');
+var ajv;
+try {
+	ajv = require('ajv');
+} catch(err) {}
 const Utils = require('../utils');
 
 module.exports = class JsonSchemaValidator {
@@ -14,10 +17,10 @@ module.exports = class JsonSchemaValidator {
 			'job-id': {type: 'string', validate: 'validateJobId'},
 			'kernel': {type: 'array', validate: 'validateKernel'},
 			'output-format': {type: 'string', validate: 'validateOutputFormat'},
-			'output-format-options': {type: 'array', validate: 'validateOutputFormatOptions'},
+			'output-format-options': {type: 'object', validate: 'validateOutputFormatOptions'},
 			'process-graph-id': {type: 'string', validate: 'validateProcessGraphId'},
-			'process-graph-variables': {type: 'array', validate: 'validateProcessGraphVariables'},
-			'proj-definition': {type: 'string', validate: 'validateProjDefinition'},
+			'process-graph-variables': {type: 'object', validate: 'validateProcessGraphVariables'},
+			'proj-definition': {type: 'string', validate: 'validateProjDefinition'}, // Proj is deprecated. Implement projjson and wkt2 instead
 			'raster-cube': {type: 'object', validate: 'validateRasterCube'},
 			'temporal-interval': {type: 'array', validate: 'validateTemporalInterval'},
 			'temporal-intervals': {type: 'array', validate: 'validateTemporalIntervals'},
@@ -28,6 +31,9 @@ module.exports = class JsonSchemaValidator {
 			format: 'full',
 			unknownFormats: Object.keys(this.typeHints)
 		};
+		if (!ajv) {
+			throw "ajv not installed";
+		}
 		this.ajv = new ajv(ajvOptions);
 		this.ajv.addKeyword('parameters', {
 			dependencies: [
