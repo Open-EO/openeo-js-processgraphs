@@ -82,7 +82,7 @@ module.exports = class BaseProcess {
 			case 'array':
 			case 'object':
 				// ToDo: Check how we can validate arrays and objects that have references to callback arguments, variables and node results in them...
-				// See issue https://github.com/Open-EO/openeo-js-commons/issues/5
+				// See issue https://github.com/Open-EO/openeo-js-processgraphs/issues/2
 //				for(var i in arg) {
 //					await this.validateArgument(arg[i], node, parameterName, param);
 //				}

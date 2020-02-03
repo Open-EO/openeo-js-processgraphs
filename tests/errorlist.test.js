@@ -1,5 +1,5 @@
-const ErrorList = require('../src/errorlist.js');
-const ProcessGraphError = require('../src/processgraph/error');
+const ErrorList = require('../src/errorlist');
+const ProcessGraphError = require('../src/error');
 
 describe('ErrorList test', () => {
   var el;

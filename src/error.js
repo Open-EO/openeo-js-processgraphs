@@ -1,4 +1,4 @@
-const Utils = require('../utils');
+const Utils = require('./utils');
 
 const MESSAGES = {
 	"MultipleResultNodes": "Multiple result nodes specified for process graph.",

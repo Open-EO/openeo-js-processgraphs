@@ -1,6 +1,6 @@
 {
-  "name": "@openeo/js-commons",
-  "version": "0.5.0-alpha.1",
+  "name": "@openeo/js-processgraphs",
+  "version": "0.1.0",
   "author": "openEO Consortium",
   "contributors": [
     {
@@ -11,11 +11,11 @@
   "license": "Apache-2.0",
   "homepage": "http://openeo.org",
   "bugs": {
-    "url": "https://github.com/open-eo/openeo-js-commons/issues"
+    "url": "https://github.com/open-eo/openeo-js-processgraphs/issues"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/open-eo/openeo-js-commons.git"
+    "url": "https://github.com/open-eo/openeo-js-processgraphs.git"
   },
   "main": "src/main.js",
   "files": [
@@ -35,9 +35,6 @@
     "webpack": "^4.35.2",
     "webpack-bundle-analyzer": "^3.3.2",
     "webpack-cli": "^3.3.6"
-  },
-  "dependencies": {
-    "compare-versions": "^3.4.0"
   },
   "scripts": {
     "docs": "jsdoc src -r -d docs/ -P package.json -R README.md",

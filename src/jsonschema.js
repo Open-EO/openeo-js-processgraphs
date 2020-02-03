@@ -2,7 +2,7 @@ var ajv;
 try {
 	ajv = require('ajv');
 } catch(err) {}
-const Utils = require('../utils');
+const Utils = require('./utils');
 
 module.exports = class JsonSchemaValidator {
 

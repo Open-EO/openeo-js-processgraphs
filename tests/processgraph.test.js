@@ -1,9 +1,9 @@
 const ProcessGraphEVI = require('./processgraph-evi.json');
 const PROCESSES = require('./processes.json');
 
-const BaseProcess = require('../src/processgraph/process');
-const ProcessGraph = require('../src/processgraph/processgraph');
-const ProcessRegistry = require('../src/processgraph/registry');
+const BaseProcess = require('../src/process');
+const ProcessGraph = require('../src/processgraph');
+const ProcessRegistry = require('../src/registry');
 
 describe('Process Graph Tests', () => {
 

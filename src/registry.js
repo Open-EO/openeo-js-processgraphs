@@ -1,5 +1,5 @@
 const BaseProcess = require('./process');
-const Utils = require('../utils');
+const Utils = require('./utils');
 
 module.exports = class ProcessRegistry {
 

@@ -20,9 +20,9 @@ script:
 # Generate docs
   - npm run docs
 # Deploy 
-  - git clone --branch gh-pages https://$GITHUB_TOKEN@github.com/Open-EO/openeo-js-commons.git gh-pages
+  - git clone --branch gh-pages https://$GITHUB_TOKEN@github.com/Open-EO/openeo-js-processgraphs.git gh-pages
   - cd gh-pages
-  - cp -R ../docs/@openeo/js-commons/* .
+  - cp -R ../docs/@openeo/js-processgraphs/* .
 
 deploy:
   provider: pages

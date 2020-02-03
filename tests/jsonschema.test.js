@@ -1,4 +1,4 @@
-const JsonSchemaValidator = require('../src/processgraph/jsonschema');
+const JsonSchemaValidator = require('../src/jsonschema');
 const geoJsonSchemaFull = require('./GeoJSON.json');
 
 describe('JSON Schema Validator Tests', () => {

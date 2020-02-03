@@ -1,7 +1,7 @@
-const ErrorList = require('../errorlist');
+const ErrorList = require('./errorlist');
 const ProcessGraphError = require('./error');
 const ProcessGraphNode = require('./node');
-const Utils = require('../utils');
+const Utils = require('./utils');
 
 const VARIABLE_TYPES = ['string', 'number', 'boolean', 'array', 'object'];
 
@@ -389,7 +389,7 @@ module.exports = class ProcessGraph {
 		// ToDo: If a process parameter supports multiple different callbacks, i.e. reduce with either an array of two separate values, this
 		// can't be separated accordingly and we just return all potential values. So it might happen that people get a successful validation
 		// but they used the wrong callback parameters.
-		// See issue https://github.com/Open-EO/openeo-js-commons/issues/6
+		// See issue https://github.com/Open-EO/openeo-js-processgraphs/issues/1
 
 		var cbParams = {};
 		var choice = schema.anyOf || schema.oneOf || schema.allOf;
