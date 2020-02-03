@@ -27,4 +27,4 @@ In a web environment you can include the library as follows:
 <script src="https://cdn.jsdelivr.net/npm/@openeo/js-processgraphs@0.1/dist/main.min.js"></script>
 ```
 
-More information can be found in the [**documentation**](https://open-eo.github.io/openeo-js-processgraühs/0.1.0/).
+More information can be found in the [**documentation**](https://open-eo.github.io/openeo-js-processgraphs/0.1.0/).
