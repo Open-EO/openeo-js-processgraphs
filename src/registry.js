@@ -1,5 +1,5 @@
-const BaseProcess = require('./process');
-const Utils = require('./utils');
+const Process = require('./process');
+const { Utils } = require('@openeo/js-commons');
 
 module.exports = class ProcessRegistry {
 
@@ -15,7 +15,7 @@ module.exports = class ProcessRegistry {
 	}
 
 	add(process) {
-		this.processes[process.id] = new BaseProcess(process);
+		this.processes[process.id] = new Process(process);
 	}
 
 	count() {
@@ -32,13 +32,13 @@ module.exports = class ProcessRegistry {
 		return null;
 	}
 
-	getSchema(id) {
+	getSpecification(id) {
 		var p = this.get(id);
-		return p !== null ? p.schema : null;
+		return p !== null ? p.spec : null;
 	}
 
-	getProcessSchemas() {
-		return Object.values(this.processes).map(impl => impl.schema);
+	getProcessSpecifications() {
+		return Object.values(this.processes).map(impl => impl.spec);
 	}
 
 };

@@ -1,38 +1,74 @@
 const JsonSchemaValidator = require('../src/jsonschema');
-const geoJsonSchemaFull = require('./GeoJSON.json');
+const epsg = require('epsg-index/all.json');
+const { Utils } = require('@openeo/js-commons');
+
+process.on('unhandledRejection', r => console.log(r));
+
+var errors;
+async function expectSuccess(validator, value, schema) {
+	errors = await validator.validateValue(value, schema);
+	expect(errors).toEqual([]);
+}
+
+async function expectError(validator, value, schema) {
+	errors = await validator.validateValue(value, schema);
+	expect(errors.length).toBeGreaterThan(0);
+}
 
 describe('JSON Schema Validator Tests', () => {
 
-	process.on('unhandledRejection', r => console.log(r));
-
 	var v;
-	var errors;
-	beforeAll(() => {
+	beforeEach(() => {
 		v = new JsonSchemaValidator();
+	});
+
+	var schema = [
+		{type: 'string'},
+		{type: 'null'}
+	];
+	var expectedSchema = {
+		$schema: "http://json-schema.org/draft-07/schema#",
+		anyOf: [
+			{type: 'string'},
+			{type: 'null'}
+		]
+	};
+	test('makeSchema', async () => {
+		let updatedSchema = v.makeSchema(schema);
+		expect(updatedSchema).toEqual(expectedSchema);
+		// Make sure the original objects stays as it was
+		expect(schema).toEqual([
+			{type: 'string'},
+			{type: 'null'}
+		]);
 	});
 
 	var epsgSchema = {
 		"type": "integer",
-		"format": "epsg-code"
+		"subtype": "epsg-code"
 	};
-	test('epsg-code', async () => {
-		errors = await v.validateJson(2000, epsgSchema);
-		expect(errors.length).toBe(0);
-		errors = await v.validateJson(7099, epsgSchema);
-		expect(errors.length).toBe(0);
-		errors = await v.validateJson(32766, epsgSchema);
-		expect(errors.length).toBe(0);
-		errors = await v.validateJson(69036405, epsgSchema);
-		expect(errors.length).toBe(0);
-		errors = await v.validateJson(0, epsgSchema);
-		expect(errors.length).toBeGreaterThan(0);
-		errors = await v.validateJson(-4326, epsgSchema);
-		expect(errors.length).toBeGreaterThan(0);
+	test('epsg-code without list', async () => {
+		await expectSuccess(v, 2000, epsgSchema);
+		await expectSuccess(v, 3857, epsgSchema);
+		await expectSuccess(v, 32766, epsgSchema);
+		await expectSuccess(v, 69036405, epsgSchema);
+		await expectError(v, 0, epsgSchema);
+		await expectError(v, -4326, epsgSchema);
+	});
+	test('epsg-code with list', async () => {
+		v.setEpsgCodes(Object.keys(epsg));
+		await expectSuccess(v, 2000, epsgSchema);
+		await expectSuccess(v, 3857, epsgSchema);
+		await expectSuccess(v, 32766, epsgSchema);
+		await expectSuccess(v, 4903, epsgSchema);
+		await expectError(v, 69036405, epsgSchema); // Deprecated in EPSG code list, use 4903 instead
+		await expectError(v, 0, epsgSchema);
+		await expectError(v, -4326, epsgSchema);
 	});
 
 	var geoJsonSchema = {
 		"type": "object",
-		"format": "geojson"
+		"subtype": "geojson"
 	};
 	var geoJsonExampleSuccessPoint = {
 		"type": "Point",
@@ -93,91 +129,100 @@ describe('JSON Schema Validator Tests', () => {
 		"coordinates": [7.0069, 51.1623]
 	};
 	var geoJsonExampleFail5 = Object.assign({}, geoJsonExampleSuccessFeatureCollection, {properties: {}});
-	test('geojson (simple)', async () => {
-		errors = await v.validateJson(geoJsonExampleSuccessPoint, geoJsonSchema);
-		expect(errors).toEqual([]);
-		errors = await v.validateJson(geoJsonExampleSuccessPolygon, geoJsonSchema);
-		expect(errors).toEqual([]);
-		errors = await v.validateJson(geoJsonExampleSuccessGeomColl, geoJsonSchema);
-		expect(errors).toEqual([]);
-		errors = await v.validateJson(geoJsonExampleSuccessFeature, geoJsonSchema);
-		expect(errors).toEqual([]);
-		errors = await v.validateJson(geoJsonExampleSuccessFeatureCollection, geoJsonSchema);
-		expect(errors).toEqual([]);
-		errors = await v.validateJson(geoJsonExampleFail1, geoJsonSchema);
-		expect(errors.length).toBeGreaterThan(0);
-		errors = await v.validateJson(geoJsonExampleFail2, geoJsonSchema);
-		expect(errors.length).toBeGreaterThan(0);
-		errors = await v.validateJson(geoJsonExampleFail3, geoJsonSchema);
-		expect(errors.length).toBeGreaterThan(0);
-	});
 
-	test('geojson (full)', async () => {
-		v.setGeoJsonSchema(geoJsonSchemaFull);
+	test('geojson', async () => {
 		try {
-			errors = await v.validateJson(geoJsonExampleSuccessPoint, geoJsonSchema);
-			expect(errors).toEqual([]);
-			errors = await v.validateJson(geoJsonExampleSuccessPolygon, geoJsonSchema);
-			expect(errors).toEqual([]);
-			errors = await v.validateJson(geoJsonExampleSuccessGeomColl, geoJsonSchema);
-			expect(errors).toEqual([]);
-			errors = await v.validateJson(geoJsonExampleSuccessFeature, geoJsonSchema);
-			expect(errors).toEqual([]);
-			errors = await v.validateJson(geoJsonExampleSuccessFeatureCollection, geoJsonSchema);
-			expect(errors).toEqual([]);
-			errors = await v.validateJson(geoJsonExampleFail1, geoJsonSchema);
-			expect(errors.length).toBeGreaterThan(0);
-			errors = await v.validateJson(geoJsonExampleFail2, geoJsonSchema);
-			expect(errors.length).toBeGreaterThan(0);
-			errors = await v.validateJson(geoJsonExampleFail3, geoJsonSchema);
-			expect(errors.length).toBeGreaterThan(0);
-			errors = await v.validateJson(geoJsonExampleFail4, geoJsonSchema);
-			expect(errors.length).toBeGreaterThan(0);
+			await expectSuccess(v, geoJsonExampleSuccessPoint, geoJsonSchema);
+			await expectSuccess(v, geoJsonExampleSuccessPolygon, geoJsonSchema);
+			await expectSuccess(v, geoJsonExampleSuccessGeomColl, geoJsonSchema);
+			await expectSuccess(v, geoJsonExampleSuccessFeature, geoJsonSchema);
+			await expectSuccess(v, geoJsonExampleSuccessFeatureCollection, geoJsonSchema);
+			await expectError(v, geoJsonExampleFail1, geoJsonSchema);
+			await expectError(v, geoJsonExampleFail2, geoJsonSchema);
+			await expectError(v, geoJsonExampleFail3, geoJsonSchema);
+			await expectError(v, geoJsonExampleFail4, geoJsonSchema);
 // Currently not properly covered by the official GeoJSON schema
-//			errors = await v.validateJson(geoJsonExampleFail5, geoJsonSchema);
-//			expect(errors.length).toBeGreaterThan(0);
+//			await expectError(v, geoJsonExampleFail5, geoJsonSchema);
 		} catch (error) {
 			expect(error).toBeUndefined();
 		}
 	});
 
-	var outputFormats = {
+	var formats = {
 		"png": {},
 		"GTiff": {}
 	};
+	var fileFormats = {
+		input: formats,
+		output: formats
+	};
 	var outputFormatSchema = {
 		"type": "string",
-		"format": "output-format"
+		"subtype": "output-format"
 	};
 	test('output-format', async () => {
-		v.setOutputFormats(outputFormats);
-		errors = await v.validateJson("GTiff", outputFormatSchema);
-		expect(errors.length).toBe(0);
-		errors = await v.validateJson("PNG", outputFormatSchema);
-		expect(errors.length).toBe(0);
-		errors = await v.validateJson("png", outputFormatSchema);
-		expect(errors.length).toBe(0);
-		errors = await v.validateJson("Png", outputFormatSchema);
-		expect(errors.length).toBe(0);
-		errors = await v.validateJson("jpeg", outputFormatSchema);
-		expect(errors.length).toBeGreaterThan(0);
-		errors = await v.validateJson("", outputFormatSchema);
-		expect(errors.length).toBeGreaterThan(0);
+		// No file formats set => succeed always
+		await expectSuccess(v, "GTiff", outputFormatSchema);
+		await expectSuccess(v, "jpeg", outputFormatSchema);
+		v.setFileFormats(fileFormats);
+		await expectSuccess(v, "GTiff", outputFormatSchema);
+		await expectSuccess(v, "PNG", outputFormatSchema);
+		await expectSuccess(v, "png", outputFormatSchema);
+		await expectSuccess(v, "Png", outputFormatSchema);
+		await expectError(v, "jpeg", outputFormatSchema);
+		await expectError(v, "", outputFormatSchema);
+	});
+	var inputFormatSchema = {
+		"type": "string",
+		"subtype": "input-format"
+	};
+	test('input-format', async () => {
+		// File formats set but invalid => fail always
+		v.setFileFormats({input: null, output: formats});
+		await expectError(v, "GTiff", inputFormatSchema);
+		await expectError(v, "jpeg", inputFormatSchema);
+		v.setFileFormats(fileFormats);
+		await expectSuccess(v, "GTiff", inputFormatSchema);
+		await expectSuccess(v, "PNG", inputFormatSchema);
+		await expectSuccess(v, "png", inputFormatSchema);
+		await expectSuccess(v, "Png", inputFormatSchema);
+		await expectError(v, "jpeg", inputFormatSchema);
+		await expectError(v, "", inputFormatSchema);
 	});
 
 	var projSchema = {
 		"type": "string",
-		"format": "proj-definition"
+		"subtype": "proj-definition"
 	};
 	test('proj-definition', async () => {
-		errors = await v.validateJson("+proj=utm +zone=32 +datum=WGS84", projSchema);
-		expect(errors.length).toBe(0);
-		errors = await v.validateJson("+proj=moll +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs", projSchema);
-		expect(errors.length).toBe(0);
-		errors = await v.validateJson("EPSG:32632", projSchema);
-		expect(errors.length).toBeGreaterThan(0);
-		errors = await v.validateJson("", projSchema);
-		expect(errors.length).toBeGreaterThan(0);
+		await expectSuccess(v, "+proj=utm +zone=32 +datum=WGS84", projSchema);
+		await expectSuccess(v, "+proj=moll +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs", projSchema);
+		await expectError(v, "EPSG:32632", projSchema);
+		await expectError(v, "", projSchema);
+	});
+
+	var temporalIntervalSchema = {
+		"type": "array",
+		"subtype": "temporal-interval"
+	};
+	test('temporal-interval', async () => {
+		await expectSuccess(v, ["2020-01-01T00:00:00Z", "2020-01-01T00:00:00Z"], temporalIntervalSchema);
+		await expectSuccess(v, ["10:00:00Z", "12:00:00Z"], temporalIntervalSchema);
+		await expectSuccess(v, ["2020-01-01", null], temporalIntervalSchema);
+		await expectError(v, [], temporalIntervalSchema);
+		await expectError(v, [null, null], temporalIntervalSchema);
+		await expectError(v, ["2021-01-01", "2020-01-01"], temporalIntervalSchema);
+	});
+
+	var temporalIntervalsSchema = {
+		"type":  "array",
+		"subtype": "temporal-intervals"
+	};
+	test('temporal-intervals', async () => {
+		await expectSuccess(v, [["2020-01-01T00:00:00Z", "2020-01-01T00:00:00Z"]], temporalIntervalsSchema);
+		await expectError(v, [], temporalIntervalsSchema);
+		await expectError(v, ["2020-01-01", null], temporalIntervalsSchema);
+		await expectError(v, [[null, null], ["2020-01-01T00:00:00Z", "2020-01-01T00:00:00Z"]], temporalIntervalsSchema);
 	});
 
 	var numberNullType = {type: ["number","null"]};
@@ -193,20 +238,20 @@ describe('JSON Schema Validator Tests', () => {
 	var vectorCubeType = {type: "object",format: "vector-cube"};
 	var dataCubeType = {anyOf: [rasterCubeType, vectorCubeType]};
 	var load_collection_spatial_extent = [
-		{"title":"Bounding Box","type":"object","format":"bounding-box","required":["west","south","east","north"],"properties":{"west":{"description":"West (lower left corner, coordinate axis 1).","type":"number"},"south":{"description":"South (lower left corner, coordinate axis 2).","type":"number"},"east":{"description":"East (upper right corner, coordinate axis 1).","type":"number"},"north":{"description":"North (upper right corner, coordinate axis 2).","type":"number"},"base":{"description":"Base (optional, lower left corner, coordinate axis 3).","type":["number","null"],"default":null},"height":{"description":"Height (optional, upper right corner, coordinate axis 3).","type":["number","null"],"default":null},"crs":{"description":"Coordinate reference system of the extent specified as EPSG code or PROJ definition. Whenever possible, it is recommended to use EPSG codes instead of PROJ definitions. Defaults to `4326` (EPSG code 4326) unless the client explicitly requests a different coordinate reference system.","schema":{"title":"EPSG Code","type":"integer","format":"epsg-code","examples":[7099],"default":4326}}}},
-		{"title":"GeoJSON Polygon(s)","type":"object","format":"geojson"},
+		{"title":"Bounding Box","type":"object","subtype":"bounding-box","required":["west","south","east","north"],"properties":{"west":{"description":"West (lower left corner, coordinate axis 1).","type":"number"},"south":{"description":"South (lower left corner, coordinate axis 2).","type":"number"},"east":{"description":"East (upper right corner, coordinate axis 1).","type":"number"},"north":{"description":"North (upper right corner, coordinate axis 2).","type":"number"},"base":{"description":"Base (optional, lower left corner, coordinate axis 3).","type":["number","null"],"default":null},"height":{"description":"Height (optional, upper right corner, coordinate axis 3).","type":["number","null"],"default":null},"crs":{"description":"Coordinate reference system of the extent specified as EPSG code or PROJ definition. Whenever possible, it is recommended to use EPSG codes instead of PROJ definitions. Defaults to `4326` (EPSG code 4326) unless the client explicitly requests a different coordinate reference system.","schema":{"title":"EPSG Code","type":"integer","subtype":"epsg-code","examples":[3857],"default":4326}}}},
+		{"title":"GeoJSON Polygon(s)","type":"object","subtype":"geojson"},
 		{"type":"null"}
 	];
 
 	test('getTypeForValue', async () => {
-		expect(await JsonSchemaValidator.getTypeForValue([stringType, nullType], null)).toBe("1");
-		expect(await JsonSchemaValidator.getTypeForValue([stringType, nullType], "Test")).toBe("0");
-		expect(await JsonSchemaValidator.getTypeForValue([stringType, nullType], 123)).toBeUndefined();
-		expect(await JsonSchemaValidator.getTypeForValue({nil: nullType, string: stringType, datetime: dateTimeType}, "2019-01-01T00:00:00Z")).toStrictEqual(["string","datetime"]);
+		expect(await v.getTypeForValue([stringType, nullType], null)).toBe("1");
+		expect(await v.getTypeForValue([stringType, nullType], "Test")).toBe("0");
+		expect(await v.getTypeForValue([stringType, nullType], 123)).toBeUndefined();
+		expect(await v.getTypeForValue({nil: nullType, string: stringType, datetime: dateTimeType}, "2019-01-01T00:00:00Z")).toStrictEqual(["string","datetime"]);
 
-		expect(await JsonSchemaValidator.getTypeForValue(load_collection_spatial_extent, {"west":-2.7634,"south":43.0408,"east":-1.121,"north":43.8385})).toBe("0");
-		expect(await JsonSchemaValidator.getTypeForValue(load_collection_spatial_extent, {"type": "Polygon","coordinates": [[[100.0, 0.0],[101.0, 0.0],[101.0, 1.0],[100.0, 1.0],[100.0, 0.0]]]})).toBe("1");
-		expect(await JsonSchemaValidator.getTypeForValue(load_collection_spatial_extent, null)).toBe("2");
+		expect(await v.getTypeForValue(load_collection_spatial_extent, {"west":-2.7634,"south":43.0408,"east":-1.121,"north":43.8385})).toBe("0");
+		expect(await v.getTypeForValue(load_collection_spatial_extent, {"type": "Polygon","coordinates": [[[100.0, 0.0],[101.0, 0.0],[101.0, 1.0],[100.0, 1.0],[100.0, 0.0]]]})).toBe("1");
+		expect(await v.getTypeForValue(load_collection_spatial_extent, null)).toBe("2");
 	});
 
 	test('isSchemaCompatible', async () => {

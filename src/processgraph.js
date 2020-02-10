@@ -1,49 +1,69 @@
 const ErrorList = require('./errorlist');
+const JsonSchemaValidator = require('./jsonschema');
 const ProcessGraphError = require('./error');
 const ProcessGraphNode = require('./node');
-const Utils = require('./utils');
-
-const VARIABLE_TYPES = ['string', 'number', 'boolean', 'array', 'object'];
+const { Utils, MigrateProcessGraphs } = require('@openeo/js-commons');
 
 module.exports = class ProcessGraph {
 
-	constructor(jsonProcessGraph, processRegistry) {
-		this.json = jsonProcessGraph;
+	constructor(processGraph, processRegistry, jsonSchemaValidator = null) {
+		// ToDo: Add support to pass full process (incl parameter etc.)
+		this.json = processGraph;
 		this.processRegistry = processRegistry;
+		this.jsonSchemaValidator = jsonSchemaValidator;
 		this.nodes = {};
 		this.startNodes = {};
 		this.resultNode = null;
-		this.childrenProcessGraphs = [];
+		this.children = [];
 		this.parentNode = null;
-		this.parentProcessId = null;
 		this.parentParameterName = null;
-		this.variables = {};
 		this.parsed = false;
 		this.validated = false;
 		this.errors = new ErrorList();
 		this.parameters = {};
 	}
 
+	static fromLegacy(processGraph, processRegistry, version) {
+		processGraph = MigrateProcessGraphs.convertProcessGraphToLatestSpec(processGraph, version);
+		return new ProcessGraph(processGraph, processRegistry);
+	}
+
 	toJSON() {
 		return this.json;
 	}
 
-	createNodeInstance(json, id, parent) {
-		return new ProcessGraphNode(json, id, parent);
+	getJsonSchemaValidator() {
+		if (this.jsonSchemaValidator === null) {
+			this.jsonSchemaValidator = this.createJsonSchemaValidatorInstance();
+		}
+		return this.jsonSchemaValidator;
 	}
 
-	createProcessGraphInstance(json) {
-		return new ProcessGraph(json, this.processRegistry);
+	createJsonSchemaValidatorInstance() {
+		return new JsonSchemaValidator();
+	}
+
+	createNodeInstance(nodeObj, id, parent) {
+		return new ProcessGraphNode(nodeObj, id, parent);
+	}
+
+	createProcessGraphInstance(processGraph) {
+		return new ProcessGraph(processGraph, this.processRegistry, this.getJsonSchemaValidator());
+	}
+
+	getParent() {
+		if (this.parentNode) {
+			return this.parentNode.getProcessGraph();
+		}
+		return null;
 	}
 
 	setParent(parent, parameterName) {
 		if (parent instanceof ProcessGraphNode) {
 			this.parentNode = parent;
-			this.parentProcessId = parent.process_id;
 		}
 		else {
 			this.parentNode = null;
-			this.parentProcessId = parent;
 		}
 		this.parentParameterName = parameterName;
 	}
@@ -66,11 +86,11 @@ module.exports = class ProcessGraph {
 		}
 
 		var makeError = (errorId) => {
-			if (this.parentProcessId) {
+			if (this.getParentProcessId()) {
 				return new ProcessGraphError(
 					errorId + 'Callback',
 					{
-						process_id: this.parentProcessId,
+						process_id: this.getParentProcessId(),
 						node_id: this.parentNode ? this.parentNode.id : 'N/A'
 					}
 				);
@@ -210,14 +230,11 @@ module.exports = class ProcessGraph {
 				case 'result':
 					this.connectNodes(node, arg.from_node);
 					break;
-				case 'variable':
-					this.parseVariable(arg);
-					break;
 				case 'callback':
-					arg.callback = this.createProcessGraph(arg.callback, node, argumentName);
+					arg.process_graph = this.createProcessGraph(arg.process_graph, node, argumentName);
 					break;
-				case 'callback-argument':
-					this.parseCallbackArgument(node, arg.from_argument);
+				case 'parameter':
+					// Nothing to do yet, will be checked at runtime only
 					break;
 				case 'array':
 				case 'object':
@@ -227,48 +244,12 @@ module.exports = class ProcessGraph {
 		}
 	}
 
-	parseCallbackArgument(node, name) {
-		var cbParams = this.getCallbackParameters();
-		if (!Utils.isObject(cbParams) || !cbParams.hasOwnProperty(name)) {
-			throw new ProcessGraphError('CallbackArgumentInvalid', {
-				argument: name,
-				node_id: node.id,
-				process_id: node.process_id
-			});
-		}
-	}
-
 	createProcessGraph(json, node, argumentName) {
 		var pg = this.createProcessGraphInstance(json);
 		pg.setParent(node, argumentName);
 		pg.parse();
-		this.childrenProcessGraphs.push(pg);
+		this.children.push(pg);
 		return pg;
-	}
-
-	parseVariable(variable) {
-		// Check whether the variable id is valid
-		if (typeof variable.variable_id !== 'string') {
-			throw new ProcessGraphError('VariableIdInvalid');
-		}
-		var obj = {};
-
-		// Check whether the data type is valid
-		if (typeof variable.type !== 'undefined' && !VARIABLE_TYPES.includes(variable.type)) {
-			throw new ProcessGraphError('VariableTypeInvalid', variable);
-		}
-		obj.type = typeof variable.type !== 'undefined' ? variable.type : 'string';
-
-		// Check whether the defult value has the correct data type
-		var defaultType = ProcessGraphNode.getType(variable.default);
-		if (defaultType !== 'undefined') {
-			if (defaultType !== obj.type) {
-				throw new ProcessGraphError('VariableDefaultValueTypeInvalid', variable);
-			}
-			else {
-				obj.value = variable.default;
-			}
-		}
 	}
 
 	setParameters(parameters) {
@@ -277,34 +258,20 @@ module.exports = class ProcessGraph {
 		}
 	}
 
+	hasParameterDefault(name) {
+		return false; // Not implemented yet
+	}
+
+	getParameterDefault(name) {
+		return null; // Not implemented yet
+	}
+
+	hasParameter(name) {
+		return typeof this.parameters[name] !== 'undefined';
+	}
+
 	getParameter(name) {
 		return this.parameters[name];
-	}
-
-	setVariableValues(variables) {
-		for(var i in variables) {
-			this.setVariable(i, variables[i]);
-		}
-	}
-
-	setVariableValue(id, value) {
-		if (typeof this.variables[id] !== 'object') {
-			this.variables[id] = {};
-		}
-		this.variables[id].value = value;
-	}
-
-	getVariableValue(id) {
-		var variable = this.variables[id];
-		if (typeof variable !== 'object' || typeof variable.value === 'undefined') {
-			throw new ProcessGraphError('VariableValueMissing', {variable_id: id});
-		}
-		var type = ProcessGraphNode.getType(variable.value);
-		if (type !== variable.type) {
-			throw new ProcessGraphError('VariableValueTypeInvalid', {variable_id: id, type: variable.type});
-		}
-
-		return this.variables[id].value;
 	}
 
 	connectNodes(node, prevNodeId) {
@@ -332,7 +299,7 @@ module.exports = class ProcessGraph {
 		for(var id in this.nodes) {
 			this.nodes[id].reset();
 		}
-		this.childrenProcessGraphs.forEach(child => child.reset());
+		this.children.forEach(child => child.reset());
 	}
 
 	getResultNode() {
@@ -371,19 +338,35 @@ module.exports = class ProcessGraph {
 		return process;
 	}
 
+	getParentProcessId() {
+		if(this.node) {
+			return this.node.process_id;
+		}
+		return null;
+	}
+
 	getParentProcess() {
-		return this.processRegistry.get(this.parentProcessId);
+		return this.processRegistry.get(this.getParentProcessId());
+	}
+
+	getCallbackParameter(name) {
+		let cbParams = this.getCallbackParameters();
+		let result = cbParams.filter(p => p.name === name);
+		if (result.length === 1) {
+			return result[0];
+		}
+		return null;
 	}
 
 	getCallbackParameters() {
 		var process = this.getParentProcess();
-		if (!this.parentParameterName || !process) {
-			return {};
+		if (!this.parentParameterName || !Utils.isObject(process) || !Array.isArray(process.parameters)) {
+			return [];
 		}
 
-		var schema = process.schema.parameters[this.parentParameterName].schema;
-		if (Utils.isObject(schema.parameters)) {
-			return schema.parameters;
+		var schema = process.parameters.filter(p => p.name === this.parentParameterName);
+		if (schema.length === 1 && Array.isArray(schema[0].parameters)) {
+			return schema[0].parameters;
 		}
 
 		// ToDo: If a process parameter supports multiple different callbacks, i.e. reduce with either an array of two separate values, this
@@ -391,13 +374,13 @@ module.exports = class ProcessGraph {
 		// but they used the wrong callback parameters.
 		// See issue https://github.com/Open-EO/openeo-js-processgraphs/issues/1
 
-		var cbParams = {};
-		var choice = schema.anyOf || schema.oneOf || schema.allOf;
+		var cbParams = [];
+		var choice = Array.isArray(schema) ? schema : (schema.anyOf || schema.oneOf || schema.allOf);
 		if (Array.isArray(choice)) {
 			for(let i in choice) {
 				var p = choice[i];
-				if (Utils.isObject(p.parameters)) {
-					Object.assign(cbParams, p.parameters);
+				if (Array.isArray(p.parameters)) {
+					cbParams = cbParams.concat(p.parameters);
 				}
 			}
 		}

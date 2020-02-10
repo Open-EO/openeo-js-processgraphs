@@ -1,29 +1,29 @@
 const ProcessGraphError = require('./error');
-const Utils = require('./utils');
+const { Utils } = require('@openeo/js-commons');
 
 module.exports = class ProcessGraphNode {
 
-	constructor(json, id, parent) {
+	constructor(node, id, parent) {
 		if (typeof id !== 'string' || id.length === 0) {
 			throw new ProcessGraphError('NodeIdInvalid');
 		}
-		if (!Utils.isObject(json)) {
+		if (!Utils.isObject(node)) {
 			throw new ProcessGraphError('NodeInvalid', {node_id: id});
 		}
-		if (typeof json.process_id !== 'string') {
+		if (typeof node.process_id !== 'string') {
 			throw new ProcessGraphError('ProcessIdMissing', {node_id: id});
 		}
 
 		this.id = id;
 		this.processGraph = parent;
-		this.process_id = json.process_id;
-		this.arguments = Utils.isObject(json.arguments) ? JSON.parse(JSON.stringify(json.arguments)) : {};
-		this.description = json.description || null;
-		this.isResultNode = json.result || false;
-		this.expectsFrom = [];
+		this.process_id = node.process_id;
+		this.arguments = Utils.isObject(node.arguments) ? JSON.parse(JSON.stringify(node.arguments)) : {};
+		this.description = node.description || null;
+		this.isResultNode = node.result || false;
+		this.expectsFrom = []; // From which node do we expect results from
+		this.receivedFrom = []; // From which node have received results from so far
 		this.passesTo = [];
-		this.result = null;
-		this.resultsAvailableFrom = [];
+		this.computedResult = null;
 	}
 
 	getProcessGraph() {
@@ -47,14 +47,14 @@ module.exports = class ProcessGraphNode {
 	}
 
 	getRawArgumentValue(name) {
-		var arg = this.arguments[name];
+		var arg = this.getRawArgument(name);
 		switch(ProcessGraphNode.getType(arg)) {
 			case 'result':
 				return arg.from_node;
 			case 'callback':
-				return arg.callback;
-			case 'callback-argument':
-				return arg.from_argument;
+				return arg.process_graph;
+			case 'parameter':
+				return arg.from_parameter;
 			default:
 				return arg;
 		}
@@ -64,24 +64,50 @@ module.exports = class ProcessGraphNode {
 		if (typeof this.arguments[name] === 'undefined') {
 			return defaultValue;
 		}
-		return this.processArgument(this.arguments[name]);
+		return this.evaluateArgument(this.arguments[name]);
 	}
 
-	processArgument(arg) {
+	getProcessGraphParameter(name) {
+		// 1. Check local parameter, then check parents
+		// 2. Check parents
+		// 3. Try to get default value
+		// 4. Fail if no value is available
+		let defaultValue;
+		let pg = this.processGraph;
+		do {
+			if (pg.hasParameter(name)) {
+				return this.getParameter(name);
+			}
+			if (pg.hasParameterDefault(name)) {
+				defaultValue = this.getParameterDefault(name);
+			}
+			pg = pg.getParent();
+		} while (pg !== null);
+
+		if (typeof defaultValue !== 'undefined') {
+			return defaultValue;
+		}
+		
+		throw new ProcessGraphError('ProcessGraphParameterMissing', {
+			argument: name,
+			node_id: this.id,
+			process_id: this.process_id
+		});
+	}
+
+	evaluateArgument(arg) {
 		var type = ProcessGraphNode.getType(arg);
 		switch(type) {
 			case 'result':
 				return this.processGraph.getNode(arg.from_node).getResult();
 			case 'callback':
-				return arg.callback;
-			case 'callback-argument':
-				return this.processGraph.getParameter(arg.from_argument);
-			case 'variable':
-				return this.processGraph.getVariableValue(arg.variable_id);
+				return arg.process_graph;
+			case 'parameter':
+				return this.getProcessGraphParameter(arg.from_parameter);
 			case 'array':
 			case 'object':
 				for(var i in arg) {
-					arg[i] = this.processArgument(arg[i]);
+					arg[i] = this.evaluateArgument(arg[i]);
 				}
 				return arg;
 			default:
@@ -97,17 +123,14 @@ module.exports = class ProcessGraphNode {
 			else if (Array.isArray(obj)) {
 				return 'array';
 			}
-			else if(obj.hasOwnProperty("callback")) {
+			else if(obj.hasOwnProperty("process_graph")) {
 				return 'callback';
-			}
-			else if(obj.hasOwnProperty("variable_id")) {
-				return 'variable';
 			}
 			else if(obj.hasOwnProperty("from_node")) {
 				return 'result';
 			}
-			else if(obj.hasOwnProperty("from_argument")) {
-				return 'callback-argument';
+			else if(obj.hasOwnProperty("from_parameter")) {
+				return 'parameter';
 			}
 			else {
 				return 'object';
@@ -137,8 +160,8 @@ module.exports = class ProcessGraphNode {
 	}
 
 	reset() {
-		this.result = null;
-		this.resultsAvailableFrom = [];
+		this.computedResult = null;
+		this.receivedFrom = [];
 	}
 
 	setDescription(description) {
@@ -151,18 +174,18 @@ module.exports = class ProcessGraphNode {
 	}
 
 	setResult(result) {
-		this.result = result;
+		this.computedResult = result;
 	}
 
 	getResult() {
-		return this.result;
+		return this.computedResult;
 	}
 
 	solveDependency(dependencyNode) {
 		if (dependencyNode !== null && this.expectsFrom.includes(dependencyNode)) {
-			this.resultsAvailableFrom.push(dependencyNode);
+			this.receivedFrom.push(dependencyNode);
 		}
-		return (this.expectsFrom.length === this.resultsAvailableFrom.length); // all dependencies solved?
+		return (this.expectsFrom.length === this.receivedFrom.length); // all dependencies solved?
 	}
 
 };

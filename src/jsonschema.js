@@ -1,112 +1,98 @@
-var ajv;
-try {
-	ajv = require('ajv');
-} catch(err) {}
-const Utils = require('./utils');
+const ajv = require('ajv');
+const { Utils } = require('@openeo/js-commons');
+const keywords = require('./keywords');
+
+var geoJsonSchema = require("./assets/GeoJSON.json");
+var subtypeSchemas = require("./assets/openeo-api/subtype-schemas.json");
 
 module.exports = class JsonSchemaValidator {
 
 	constructor() {
-		this.typeHints = {
-			'band-name': {type: 'string', validate: 'validateBandName'},
-			'bounding-box': {type: 'object', validate: 'validateBoundingBox'},
-			'callback': {type: 'object', validate: 'validateCallback'},
-			'collection-id': {type: 'string', validate: 'validateCollectionId'},
-			'epsg-code': {type: 'integer', validate: 'validateEpsgCode'},
-			'geojson': {type: 'object', validate: 'validateGeoJson'},
-			'job-id': {type: 'string', validate: 'validateJobId'},
-			'kernel': {type: 'array', validate: 'validateKernel'},
-			'output-format': {type: 'string', validate: 'validateOutputFormat'},
-			'output-format-options': {type: 'object', validate: 'validateOutputFormatOptions'},
-			'process-graph-id': {type: 'string', validate: 'validateProcessGraphId'},
-			'process-graph-variables': {type: 'object', validate: 'validateProcessGraphVariables'},
-			'proj-definition': {type: 'string', validate: 'validateProjDefinition'}, // Proj is deprecated. Implement projjson and wkt2 instead
-			'raster-cube': {type: 'object', validate: 'validateRasterCube'},
-			'temporal-interval': {type: 'array', validate: 'validateTemporalInterval'},
-			'temporal-intervals': {type: 'array', validate: 'validateTemporalIntervals'},
-			'vector-cube': {type: 'object', validate: 'validateVectorCube'}
-		};
-		var ajvOptions = {
+		this.ajv = new ajv({
 			schemaId: 'auto',
 			format: 'full',
-			unknownFormats: Object.keys(this.typeHints)
-		};
-		if (!ajv) {
-			throw "ajv not installed";
-		}
-		this.ajv = new ajv(ajvOptions);
-		this.ajv.addKeyword('parameters', {
-			dependencies: [
-				"type",
-				"format"
-			],
-			metaSchema: {
-				type: "object",
-				additionalProperties: {
-					type: "object"
-				}
-			},
+			addUsedSchema: false
+		});
+		// Add subtype + GeoJSON schemas
+		this.ajv.addSchema(geoJsonSchema);
+		// Add openEO specific keywords
+		this.ajv.addKeyword('parameters', Object.assign(keywords.parameters, {
 			valid: true,
 			errors: true
-		});
-		this.ajv.addKeyword('typehint', {
-			dependencies: [
-				"type"
-			],
-			validate: async (typehint, data, schema) => {
-				if (typeof this.typeHints[typehint] === 'object') {
-					var th = this.typeHints[typehint];
-					if (th.type === schema.type || (Array.isArray(schema.type) && schema.type.includes(th.type))) {
-						return await this[th.validate](data);
-					}
-				}
-				return false;
-			},
+		}));
+		this.ajv.addKeyword('subtype', Object.assign(keywords.subtype, {
+			validate: async (subtype, data, schema) => await this.validateSubtype(subtype, data, schema),
 			async: true,
 			errors: true
-		});
+		}));
 
-		this.outputFormats = null;
-		this.geoJsonValidator = null;
+		this.fileFormats = {
+			input: null,
+			output: null
+		};
+		this.epsgCodes = null;
 	}
 
-	/* This is a temporary workaround for the following issues:
-		- https://github.com/epoberezkin/ajv/issues/1039
-		- https://github.com/Open-EO/openeo-processes/issues/67 
-		Once one of the issues is solved, fixSchema can be removed.
-	*/
-	fixSchemaFormat(s) {
-		for(var i in s) {
-			if (i === 'format' && typeof s[i] === 'string' && Object.keys(this.typeHints).includes(s[i])) {
-				s.typehint = s[i];
-			}
-			if (s[i] && typeof s[i] === 'object') {
-				s[i] = this.fixSchemaFormat(s[i]);
+	getFunctionName(subtype) {
+		// compute the function name (camelCase), e.g. for `band-name` it will be `validateBandName`
+		return "validate" + subtype.replace(/(^|\-)(\w)/g, (a, b, char) => char.toUpperCase());
+	}
+
+	/**
+	 * Returns the indices of provided JSON Schemas that the provided values matches against.
+	 * 
+	 * Returns a single index if a single type is mathcing.
+	 * Returns undefined if no valid type is found.
+	 * Returns an array of indices if multiple types are found.
+	 * 
+	 * @param {Array} types - Array of JSON schemas
+	 * @param {*} value - A value
+	 * @return {(string[]|string|undefined)} - Returns matching indices, see description.
+	 */
+	async getTypeForValue(types, value) {
+		var potentialTypes = [];
+		for(var i in types) {
+			var errors = await this.validateValue(value, types[i]);
+			if (errors.length === 0) {
+				potentialTypes.push(String(i));
 			}
 		}
-		return s;
+		return potentialTypes.length > 1 ? potentialTypes : potentialTypes[0];
 	}
 
-	fixSchema(s) {
-		s = JSON.parse(JSON.stringify(s));
+	makeSchema(schema, $async = false) {
+		schema = Utils.deepClone(schema);
+
+		// Make array of schemas to a anyOf schema
+		if (Array.isArray(schema)) {
+			schema = {
+				anyOf: schema
+			};
+		}
 
 		// Set applicable JSON Schema draft version if not already set
-		if (typeof s.$schema === 'undefined') {
-			s.$schema = "http://json-schema.org/draft-07/schema#";
+		if (typeof schema.$schema === 'undefined') {
+			schema.$schema = "http://json-schema.org/draft-07/schema#";
 		}
 
-		// format => typehint (see above)
-		s = this.fixSchemaFormat(s);
+		// Set async execution
+		if ($async) {
+			schema.$async = true;
+			if (Utils.isObject(schema.definitions)) {
+				for(let key in schema.definitions) {
+					schema.definitions[key].$async = true;
+				}
+			}
+		}
 
-		return s;
+		return schema;
 	}
 
-	async validateJson(json, schema) {
-		schema = this.fixSchema(schema);
-		schema.$async = true;
+	async validateValue(value, schema) {
+		schema = this.makeSchema(schema, true);
 
 		try {
-			await this.ajv.validate(schema, json);
+			await this.ajv.validate(schema, value);
 			return [];
 		} catch (e) {
 			if (Array.isArray(e.errors)) {
@@ -118,172 +104,82 @@ module.exports = class JsonSchemaValidator {
 		}
 	}
 
-	validateJsonSchema(schema) {
-		schema = JSON.parse(JSON.stringify(schema));
-		schema = this.fixSchema(schema);
+/*	validateSchema(schema) {
+		schema = this.makeSchema(schema);
 		let result = this.ajv.compile(schema);
 		return result.errors || [];
-	}
+	} */
 
-	// Pass the content of https://geojson.org/schema/GeoJSON.json
-	setGeoJsonSchema(schema) {
-		var gjv = new ajv();
-		this.geoJsonValidator = gjv.compile(schema);
-	}
+	async validateSubtype(subtype, data, schema) {
+		if (typeof subtypeSchemas.definitions[subtype] !== 'undefined') {
+			schema = this.makeSchema(subtypeSchemas, true);
+			// Make the schema for this subtype the default schema to be checked
+			Object.assign(schema, subtypeSchemas.definitions[subtype]);
+			// Remove subtype to avoid recursion
+			delete schema.subtype;
+		}
+		else {
+			schema = this.makeSchema(schema, true);
+		}
 
-	// Expects API compatible output formats (see GET /output_formats).
-	setOutputFormats(outputFormats) {
-		this.outputFormats = {};
-		for (var key in outputFormats) {
-			this.outputFormats[key.toUpperCase()] = outputFormats[key];
+		let validated = await this.ajv.validate(schema, data);
+		let funcName = this.getFunctionName(subtype);
+		if (validated && typeof this[funcName] === 'function') {
+			return await this[funcName](data);
+		}
+		else {
+			return validated;
 		}
 	}
 
-	/* istanbul ignore next */
-	async validateBandName(/*data*/) {
-		// Can't validate band name without knowing/loading the data.
-		// => To be overridden by end-user application.
-		return true;
+	// Expects API compatible file formats (see GET /file_formats).
+	setFileFormats(fileFormats) {
+		for(let io of ['input', 'output']) {
+			this.fileFormats[io] = {};
+			if (!Utils.isObject(fileFormats[io])) {
+				continue;
+			}
+			for (let key in fileFormats[io]) {
+				this.fileFormats[io][key.toUpperCase()] = fileFormats[io][key];
+			}
+		}
 	}
 
-	/* istanbul ignore next */
-	async validateBoundingBox(/*data*/) {
-		// Nothing to validate, schema is (usually) delivered by processes.
-		return true;
-	}
-
-	/* istanbul ignore next */
-	async validateCallback(/*data*/) {
-		// This should be checked by process graph parsing automatically.
-		// Otherwise to be overridden by end-user application.
-		return true;
-	}
-
-	/* istanbul ignore next */
-	async validateCollectionId(/*data*/) {
-		// To be overridden by end-user application.
-		return true;
+	setEpsgCodes(epsgCodes) {
+		this.epsgCodes = epsgCodes.map(v => parseInt(v, 10));
 	}
 
 	async validateEpsgCode(data) {
+		if (Array.isArray(this.epsgCodes)) {
+			if (this.epsgCodes.includes(data)) {
+				return true;
+			}
+		}
 		// Rough check for valid numbers as we don't want to maintain a full epsg code list in this repo.
-		// Fully validation to be implemented by end-user application by overriding this method.
-		if (data >= 2000) {
+		else if (data >= 2000) {
 			return true;
 		}
-		
+
 		throw new ajv.ValidationError([{
-			message: "Invalid EPSG code specified."
+			message: "Invalid EPSG code '" + data + "' specified."
 		}]);
 	}
-
-	// A very rough GeoJSON validation if no GeoJSON schema is available.
-	validateGeoJsonSimple(data) {
-		if (!Utils.isObject(data)) {
+	
+	async validateInputFormat(data) {
+		if (Utils.isObject(this.fileFormats.input) && !(data.toUpperCase() in this.fileFormats.input)) {
 			throw new ajv.ValidationError([{
-				message: "Invalid GeoJSON specified (not an object)."
+				message: "Input format  '" + data + "' not supported."
 			}]);
 		}
-		else if (typeof data.type !== 'string') {
-			throw new ajv.ValidationError([{
-				message: "Invalid GeoJSON specified (no type property)."
-			}]);
-		}
-
-		switch(data.type) {
-			case "Point":
-			case "MultiPoint":
-			case "LineString":
-			case "MultiLineString":
-			case "Polygon":
-			case "MultiPolygon":
-				if (!Array.isArray(data.coordinates)) {
-					throw new ajv.ValidationError([{
-						message: "Invalid GeoJSON specified (Geometry has no valid coordinates member)."
-					}]);
-				}
-				return true;
-			case "GeometryCollection":
-				if (!Array.isArray(data.geometries)) {
-					throw new ajv.ValidationError([{
-						message: "Invalid GeoJSON specified (GeometryCollection has no valid geometries member)."
-					}]);
-				}
-				return true;
-			case "Feature":
-				if (data.geometry !== null && !Utils.isObject(data.geometry)) {
-					throw new ajv.ValidationError([{
-						message: "Invalid GeoJSON specified (Feature has no valid geometry member)."
-					}]);
-				}
-				if (data.properties !== null && !Utils.isObject(data.properties)) {
-					throw new ajv.ValidationError([{
-						message: "Invalid GeoJSON specified (Feature has no valid properties member)."
-					}]);
-				}
-				return true;
-			case "FeatureCollection":
-				if (!Array.isArray(data.features)) {
-					throw new ajv.ValidationError([{
-						message: "Invalid GeoJSON specified (FeatureCollection has no valid features member)."
-					}]);
-				}
-				return true;
-			default:
-				throw new ajv.ValidationError([{
-					message: "Invalid GeoJSON type specified."
-				}]);
-		}
-	}
-
-	async validateGeoJson(data) {
-		if (this.geoJsonValidator !== null) {
-			if (!this.geoJsonValidator(data)) {
-				throw new ajv.ValidationError(this.geoJsonValidator.errors);
-			}
-			return true;
-		}
-		else {
-			return this.validateGeoJsonSimple(data);
-		}
-	}
-
-	/* istanbul ignore next */
-	async validateJobId(/*data*/) {
-		// To be overridden by end-user application
-		return true;
-	}
-
-	/* istanbul ignore next */
-	async validateKernel(/*data*/) {
-		// ToDo? / To be overridden by end-user application
 		return true;
 	}
 	
 	async validateOutputFormat(data) {
-		if (Utils.isObject(this.outputFormats) && !(data.toUpperCase() in this.outputFormats)) {
+		if (Utils.isObject(this.fileFormats.output) && !(data.toUpperCase() in this.fileFormats.output)) {
 			throw new ajv.ValidationError([{
-				message: "Output format not supported."
+				message: "Output format  '" + data + "' not supported."
 			}]);
 		}
-		return true;
-	}
-
-	/* istanbul ignore next */
-	async validateOutputFormatOptions(/*data*/) {
-		// This depends on the output format specified and can't be fully validated without knowning the chosen output format.
-		return true;
-	}
-
-	/* istanbul ignore next */
-	async validateProcessGraphId(/*data*/) {
-		// To be overridden by end-user application
-		return true;
-	}
-
-	/* istanbul ignore next */
-	async validateProcessGraphVariables(/*data*/) {
-		// Nothing to validate against...
 		return true;
 	}
 
@@ -297,26 +193,29 @@ module.exports = class JsonSchemaValidator {
 		return true;
 	}
 
-	/* istanbul ignore next */
-	async validateRasterCube(/*data*/) {
-		// This is usually a reference to a process result as we haven't specified any JSON encoding for raster cubes.
-		return true;
-	}
-
-	async validateTemporalInterval(/*data*/) {
-		// ToDo: Fully check against schema, most is already checked by JSON Schemas itself, but check for example that 
-		// both can't be null at the same time or the first element is > the second element.
+	async validateTemporalInterval(data) {
+		if (data[0] === null && data[1] === null) {
+			throw new ajv.ValidationError([{
+				message: "Temporal interval must not be open on both ends."
+			}]);
+		}
+		else if (data[0] !== null && data[1] !== null) {
+			let date1 = new Date(data[0]);
+			let date2 = new Date(data[1]);
+			if (date2.getTime() < date1.getTime()) {
+				throw new ajv.ValidationError([{
+					message: "The second timestamp can't be before the first timestamp."
+				}]);
+			}
+		}
 		return true;
 	}
 	
 	async validateTemporalIntervals(data) {
-		var invalid = data.filter(x => !this.validateTemporalInterval(x));
-		return invalid.length === 0;
-	}
-
-	/* istanbul ignore next */
-	async validateVectorCube(/*data*/) {
-		// This is usually a reference to a process result as we haven't specified any JSON encoding for raster cubes.
+		for(let interval of data) {
+			// throws if invalid
+			await this.validateTemporalInterval(interval);
+		}
 		return true;
 	}
 
@@ -377,29 +276,6 @@ module.exports = class JsonSchemaValidator {
 			schemas = [schema];
 		}
 		return schemas;
-	}
-
-	/**
-	 * Returns the indices of provided JSON Schemas that the provided values matches against.
-	 * 
-	 * Returns a single index if a single type is mathcing.
-	 * Returns undefined if no valid type is found.
-	 * Returns an array of indices if multiple types are found.
-	 * 
-	 * @param {Array} types - Array of JSON schemas
-	 * @param {*} value - A value
-	 * @return {(string[]|string|undefined)} - Returns matching indices, see description.
-	 */
-	static async getTypeForValue(types, value) {
-		var validator = new JsonSchemaValidator();
-		var potentialTypes = [];
-		for(var i in types) {
-			var errors = await validator.validateJson(value, types[i]);
-			if (errors.length === 0) {
-				potentialTypes.push(String(i));
-			}
-		}
-		return potentialTypes.length > 1 ? potentialTypes : potentialTypes[0];
 	}
 
 };

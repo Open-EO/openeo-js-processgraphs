@@ -1,4 +1,4 @@
-const Utils = require('./utils');
+const { Utils } = require('@openeo/js-commons');
 
 const MESSAGES = {
 	"MultipleResultNodes": "Multiple result nodes specified for process graph.",
@@ -11,16 +11,11 @@ const MESSAGES = {
 	"NodeIdInvalid": "Invalid node id specified in process graph.",
 	"NodeInvalid": "Process graph node '{node_id}' is not a valid object.",
 	"ProcessIdMissing": "Process graph node '{node_id}' doesn't contain a process id.",
-	"CallbackArgumentInvalid": "Invalid callback argument '{argument}' requested in the process '{process_id}' (node: '{node_id}').",
+	"ProcessGraphParameterMissing": "Invalid parameter '{argument}' requested in the process '{process_id}' (node: '{node_id}').",
 	"ProcessUnsupported": "Process '{process}' is not supported.",
-	"ProcessArgumentUnsupported": "Process '{process}' does not support argument '{argument}'.",
+	"ProcessArgumentUnsupported": "Process '{process}' does not support the following arguments: {arguments}",
 	"ProcessArgumentRequired": "Process '{process}' requires argument '{argument}'.",
-	"ProcessArgumentInvalid": "The argument '{argument}' in process '{process}' is invalid: {reason}",
-	"VariableValueMissing": "No value specified for process graph variable '{variable_id}'.",
-	"VariableDefaultValueTypeInvalid": "The default value specified for the process graph variable '{variable_id}' is not of type '{type}'.",
-	"VariableValueTypeInvalid": "The value specified for the process graph variable '{variable_id}' is not of type '{type}'.",
-	"VariableIdInvalid": "A specified variable ID is not valid.",
-	"VariableTypeInvalid": "The data type specified for the process graph variable '{variable_id}' is invalid. Must be one of: string, boolean, number, array or object.",
+	"ProcessArgumentInvalid": "The argument '{argument}' in process '{process}' is invalid: {reason}"
 };
 
 module.exports = class ProcessGraphError extends Error {
