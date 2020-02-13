@@ -258,11 +258,11 @@ module.exports = class ProcessGraph {
 		}
 	}
 
-	hasParameterDefault(name) {
+	hasParameterDefault(/*name*/) {
 		return false; // Not implemented yet
 	}
 
-	getParameterDefault(name) {
+	getParameterDefault(/*name*/) {
 		return null; // Not implemented yet
 	}
 
