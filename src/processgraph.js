@@ -51,6 +51,10 @@ module.exports = class ProcessGraph {
 		return new ProcessGraph(processGraph, this.processRegistry, this.getJsonSchemaValidator());
 	}
 
+	getParentNode() {
+		return this.parentNode;
+	}
+
 	getParent() {
 		if (this.parentNode) {
 			return this.parentNode.getProcessGraph();

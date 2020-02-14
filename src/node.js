@@ -30,6 +30,13 @@ module.exports = class ProcessGraphNode {
 		return this.processGraph;
 	}
 
+	getParent() {
+		if (this.processGraph !== null) {
+			return this.processGraph.getParentNode();
+		}
+		return null;
+	}
+
 	getArgumentNames() {
 		return Object.keys(this.arguments);
 	}
