@@ -34,7 +34,6 @@ module.exports = class BaseProcess {
 			});
 		}
 
-		let validator = node.getProcessGraph().getJsonSchemaValidator();
 		// Validate against JSON Schema
 		for(let name in this.parameters) {
 			let param = this.parameters[name];
@@ -43,25 +42,15 @@ module.exports = class BaseProcess {
 			if (await this.validateArgument(arg, node, name, param)) {
 				continue;
 			}
-
-			// Validate against JSON schema
-			let errors = await validator.validateValue(arg, param.schema);
-			if (errors.length > 0) {
-				throw new ProcessGraphError('ProcessArgumentInvalid', {
-					process: this.id,
-					argument: name,
-					reason: errors
-				});
-			}
 		}
 	}
 
 	async validateArgument(arg, node, parameterName, param) {
-		let argType = ProcessGraphNode.getType(arg);
 		if (arg instanceof ProcessGraph) {
 			await arg.validate(true);
 			return true;
 		}
+		let argType = ProcessGraphNode.getType(arg);
 		switch(argType) {
 			// Check whether parameter is required
 			case 'undefined':
@@ -96,6 +85,17 @@ module.exports = class BaseProcess {
 //					await this.validateArgument(arg[i], node, parameterName, param);
 //				}
 				return true;
+			default:
+				let validator = node.getProcessGraph().getJsonSchemaValidator();
+				// Validate against JSON schema
+				let errors = await validator.validateValue(arg, param.schema);
+				if (errors.length > 0) {
+					throw new ProcessGraphError('ProcessArgumentInvalid', {
+						process: this.id,
+						argument: parameterName,
+						reason: errors
+					});
+				}
 		}
 
 		return false;
