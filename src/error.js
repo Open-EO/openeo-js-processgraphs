@@ -1,4 +1,4 @@
-const { Utils } = require('@openeo/js-commons');
+const Utils = require('@openeo/js-commons/src/utils.js');
 
 const MESSAGES = {
 	"MultipleResultNodes": "Multiple result nodes specified for process graph.",
@@ -15,7 +15,9 @@ const MESSAGES = {
 	"ProcessUnsupported": "Process '{process}' is not supported.",
 	"ProcessArgumentUnsupported": "Process '{process}' does not support the following arguments: {arguments}",
 	"ProcessArgumentRequired": "Process '{process}' requires argument '{argument}'.",
-	"ProcessArgumentInvalid": "The argument '{argument}' in process '{process}' is invalid: {reason}"
+	"ProcessArgumentInvalid": "The argument '{argument}' in process '{process}' is invalid: {reason}",
+	"ProcessGraphMissing": "No process graph specified",
+	"ProcessMissing": "No process specified"
 };
 
 module.exports = class ProcessGraphError extends Error {

@@ -1,5 +1,5 @@
 const Process = require('./process');
-const { Utils } = require('@openeo/js-commons');
+const Utils = require('@openeo/js-commons/src/utils.js');
 
 module.exports = class ProcessRegistry {
 

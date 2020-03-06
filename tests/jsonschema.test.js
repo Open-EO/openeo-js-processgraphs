@@ -1,6 +1,6 @@
 const JsonSchemaValidator = require('../src/jsonschema');
 const epsg = require('epsg-index/all.json');
-const { Utils } = require('@openeo/js-commons');
+const Utils = require('@openeo/js-commons/src/utils.js');
 
 process.on('unhandledRejection', r => console.log(r));
 

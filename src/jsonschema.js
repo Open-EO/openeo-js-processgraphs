@@ -1,5 +1,5 @@
 const ajv = require('ajv');
-const { Utils } = require('@openeo/js-commons');
+const Utils = require('@openeo/js-commons/src/utils.js');
 const keywords = require('./keywords');
 
 var geoJsonSchema = require("./assets/GeoJSON.json");

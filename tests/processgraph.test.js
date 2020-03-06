@@ -1,5 +1,4 @@
-const ProcessGraphEVILegacy = require('./assets/0.4/evi.json');
-const ProcessGraphEVI = require('./assets/1.0/evi.json');
+const ProcessGraphEVI = require('./assets/evi.json');
 const PROCESSES = require('./assets/processes.json');
 
 const ProcessGraph = require('../src/processgraph');
@@ -15,33 +14,39 @@ describe('Process Graph Tests', () => {
 		registry.addFromResponse({processes: PROCESSES});
 	});
 
-	test('Parser & Validator > Fails', async () => {
+	test('Parser & Validator > Empty process throws', async () => {
+		var pg = new ProcessGraph({}, registry);
+		expect(() => pg.parse()).toThrow();
+	});
+
+	test('Parser & Validator > Invalid process graph throws', async () => {
+		var pg = new ProcessGraph({process_graph: null}, registry);
+		expect(() => pg.parse()).toThrow();
+	});
+
+	test('Parser & Validator > Empty process graph fails', async () => {
 		try {
-			var pg = new ProcessGraph({}, registry);
+			var process = {
+				process_graph: {}
+			};
+			var pg = new ProcessGraph(process, registry);
 			var errors = await pg.validate(false);
 			expect(errors.count()).toBeGreaterThan(0);
 			expect(pg.isValid()).toBe(false);
 			expect(pg.getErrors()).toStrictEqual(errors);
-			expect(pg.toJSON()).toStrictEqual({});
+			expect(pg.toJSON()).toStrictEqual(process);
 		} catch(e) {
 			expect(e).toBeNull();
 		}
 	});
 
-	test('Parser & Validator > EVI with legacy graph', async () => {
-		var pg = ProcessGraph.fromLegacy(ProcessGraphEVILegacy, registry, "0.4.0");
-		var errors = await pg.validate(false);
-		if (errors.count() > 0) {
-			console.log(errors.getMessage());
-		}
-		expect(errors.count()).toBe(0);
-		expect(pg.isValid()).toBe(true);
-		expect(pg.getErrors()).toStrictEqual(errors);
+	test('Parser & Validator > parse EVI without registry', async () => {
+		var pg = new ProcessGraph(ProcessGraphEVI);
+		expect(() => pg.parse()).not.toThrow();
 		expect(pg.getStartNodeIds()).toEqual(["dc"]);
-		expect(pg.toJSON()).toStrictEqual(ProcessGraphEVI);
 	});
 
-	test('Parser & Validator > EVI', async () => {
+	test('Parser & Validator > validate EVI with registry', async () => {
 		var pg = new ProcessGraph(ProcessGraphEVI, registry);
 		var errors = await pg.validate(false);
 		if (errors.count() > 0) {

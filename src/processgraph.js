@@ -2,13 +2,19 @@ const ErrorList = require('./errorlist');
 const JsonSchemaValidator = require('./jsonschema');
 const ProcessGraphError = require('./error');
 const ProcessGraphNode = require('./node');
-const { Utils, MigrateProcessGraphs } = require('@openeo/js-commons');
+const Utils = require('@openeo/js-commons/src/utils.js');
 
 module.exports = class ProcessGraph {
 
-	constructor(processGraph, processRegistry, jsonSchemaValidator = null) {
-		// ToDo: Add support to pass full process (incl parameter etc.)
-		this.json = processGraph;
+	// ToDo: Also parse and validate other parts of the process, e.g. id, parameters, etc.
+
+	constructor(process, processRegistry = null, jsonSchemaValidator = null) {
+		this.process = process;
+		// process_graph attribute needed by ProcessGraphNode.getType()
+		this.process_graph = null;
+		if (Utils.isObject(process) && Utils.isObject(process.process_graph)) {
+			this.process_graph = process.process_graph;
+		}
 		this.processRegistry = processRegistry;
 		this.jsonSchemaValidator = jsonSchemaValidator;
 		this.nodes = {};
@@ -23,13 +29,8 @@ module.exports = class ProcessGraph {
 		this.parameters = {};
 	}
 
-	static fromLegacy(processGraph, processRegistry, version) {
-		processGraph = MigrateProcessGraphs.convertProcessGraphToLatestSpec(processGraph, version);
-		return new ProcessGraph(processGraph, processRegistry);
-	}
-
 	toJSON() {
-		return this.json;
+		return this.process;
 	}
 
 	getJsonSchemaValidator() {
@@ -47,8 +48,8 @@ module.exports = class ProcessGraph {
 		return new ProcessGraphNode(nodeObj, id, parent);
 	}
 
-	createProcessGraphInstance(processGraph) {
-		return new ProcessGraph(processGraph, this.processRegistry, this.getJsonSchemaValidator());
+	createProcessGraphInstance(process) {
+		return new ProcessGraph(process, this.processRegistry, this.getJsonSchemaValidator());
 	}
 
 	getParentNode() {
@@ -85,11 +86,7 @@ module.exports = class ProcessGraph {
 			return;
 		}
 
-		for(let id in this.json) {
-			this.nodes[id] = this.createNodeInstance(this.json[id], id, this);
-		}
-
-		var makeError = (errorId) => {
+		const makeError = (errorId) => {
 			if (this.getParentProcessId()) {
 				return new ProcessGraphError(
 					errorId + 'Callback',
@@ -103,6 +100,17 @@ module.exports = class ProcessGraph {
 				return new ProcessGraphError(errorId);
 			}
 		};
+
+		if (!Utils.isObject(this.process)) {
+			throw makeError('ProcessMissing');
+		}
+		if (!Utils.isObject(this.process.process_graph)) {
+			throw makeError('ProcessGraphMissing');
+		}
+
+		for(let id in this.process.process_graph) {
+			this.nodes[id] = this.createNodeInstance(this.process.process_graph[id], id, this);
+		}
 
 		for(let id in this.nodes) {
 			var node = this.nodes[id];
@@ -235,7 +243,7 @@ module.exports = class ProcessGraph {
 					this.connectNodes(node, arg.from_node);
 					break;
 				case 'callback':
-					arg.process_graph = this.createProcessGraph(arg.process_graph, node, argumentName);
+					args[argumentName] = this.createProcessGraph(arg, node, argumentName);
 					break;
 				case 'parameter':
 					// Nothing to do yet, will be checked at runtime only
@@ -248,8 +256,8 @@ module.exports = class ProcessGraph {
 		}
 	}
 
-	createProcessGraph(json, node, argumentName) {
-		var pg = this.createProcessGraphInstance(json);
+	createProcessGraph(process, node, argumentName) {
+		var pg = this.createProcessGraphInstance(process);
 		pg.setParent(node, argumentName);
 		pg.parse();
 		this.children.push(pg);
@@ -335,6 +343,9 @@ module.exports = class ProcessGraph {
 	}
 
 	getProcess(node) {
+		if (this.processRegistry === null) {
+			throw new Error("Process Registry not set.");
+		}
 		var process = this.processRegistry.get(node.process_id);
 		if (process === null) {
 			throw new ProcessGraphError('ProcessUnsupported', {process: node.process_id});
@@ -350,6 +361,9 @@ module.exports = class ProcessGraph {
 	}
 
 	getParentProcess() {
+		if (this.processRegistry === null) {
+			throw new Error("Process Registry not set.");
+		}
 		return this.processRegistry.get(this.getParentProcessId());
 	}
 

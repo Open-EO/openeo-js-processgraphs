@@ -1,5 +1,5 @@
 const ProcessGraphError = require('./error');
-const { Utils } = require('@openeo/js-commons');
+const Utils = require('@openeo/js-commons/src/utils.js');
 
 module.exports = class ProcessGraphNode {
 
@@ -59,7 +59,7 @@ module.exports = class ProcessGraphNode {
 			case 'result':
 				return arg.from_node;
 			case 'callback':
-				return arg.process_graph;
+				return arg;
 			case 'parameter':
 				return arg.from_parameter;
 			default:
@@ -108,7 +108,7 @@ module.exports = class ProcessGraphNode {
 			case 'result':
 				return this.processGraph.getNode(arg.from_node).getResult();
 			case 'callback':
-				return arg.process_graph;
+				return arg;
 			case 'parameter':
 				return this.getProcessGraphParameter(arg.from_parameter);
 			case 'array':
@@ -130,7 +130,7 @@ module.exports = class ProcessGraphNode {
 			else if (Array.isArray(obj)) {
 				return 'array';
 			}
-			else if(obj.hasOwnProperty("process_graph")) {
+			else if(obj.hasOwnProperty("process_graph")) { // This is also true for ProcessGraph instances. Normally, we would do `obj instanceof ProcessGraph` here, but that makes a circular reference and thus we just check for the property
 				return 'callback';
 			}
 			else if(obj.hasOwnProperty("from_node")) {
