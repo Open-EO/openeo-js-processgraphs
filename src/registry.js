@@ -15,11 +15,18 @@ module.exports = class ProcessRegistry {
 	}
 
 	add(process) {
-		this.processes[process.id] = new Process(process);
+		if (typeof process.id !== 'string') {
+			throw new Error("Invalid process; no id specified.");
+		}
+		this.processes[process.id.toLowerCase()] = new Process(process);
 	}
 
 	count() {
 		return Utils.size(this.processes);
+	}
+
+	all() {
+		return Object.values(this.processes);
 	}
 	
 	get(id) {
@@ -32,13 +39,8 @@ module.exports = class ProcessRegistry {
 		return null;
 	}
 
-	getSpecification(id) {
-		var p = this.get(id);
-		return p !== null ? p.spec : null;
-	}
-
-	getProcessSpecifications() {
-		return Object.values(this.processes).map(impl => impl.spec);
+	toJSON() {
+		return Object.values(this.processes).map(impl => impl.toJSON());
 	}
 
 };

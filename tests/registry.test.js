@@ -23,19 +23,8 @@ describe('Registry Tests', () => {
 		expect(x).toBeNull();
 	});
 
-	test('Get specification', () => {
-		var absoluteSchema = registry.getSpecification(processName);
-		expect(absoluteSchema.id).toBe(processName);
-
-		var x2 = registry.getSpecification("unknown-process");
-		expect(x2).toBeNull();
-
-		var x3 = registry.getSpecification(null);
-		expect(x3).toBeNull();
-	});
-
 	test('Get specifications', () => {
-		var schemas = registry.getProcessSpecifications();
+		var schemas = registry.toJSON();
 		expect(Array.isArray(schemas)).toBe(true);
 		expect(schemas.length).toBe(PROCESSES.length);
 	});

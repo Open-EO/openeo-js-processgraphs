@@ -24,6 +24,10 @@ module.exports = class BaseProcess {
 
 	}
 
+	toJSON() {
+		return this.spec;
+	}
+
 	async validate(node) {
 		// Check for arguments we don't support and throw error
 		let unsupportedArgs = node.getArgumentNames().filter(name => !(name in this.parameters));
@@ -105,6 +109,7 @@ module.exports = class BaseProcess {
 	async execute(/*node*/) {
 		throw "execute not implemented yet";
 	}
+
 	/* istanbul ignore next */
 	test() {
 		// Run the tests from the examples

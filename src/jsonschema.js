@@ -223,8 +223,8 @@ module.exports = class JsonSchemaValidator {
 	// So would a value compatible with valueSchema be accepted by paramSchema?
 	// allowValueAsElements: If true, it checks whether the valueSchema would be allowed as part of an array or object. For example number could be allowed as part of an array of numbers.
 	static isSchemaCompatible(paramSchema, valueSchema, strict = false, allowValueAsElements = false) {
-		var paramSchemas = this._convertSchemaToArray(paramSchema);
-		var valueSchemas = this._convertSchemaToArray(valueSchema);
+		var paramSchemas = JsonSchemaValidator.convertSchemaToArray(paramSchema);
+		var valueSchemas = JsonSchemaValidator.convertSchemaToArray(valueSchema);
 
 		var compatible = paramSchemas.filter(ps => {
 			for(var i in valueSchemas) {
@@ -246,13 +246,14 @@ module.exports = class JsonSchemaValidator {
 						// If allowValueAsElements is true, all types are allowed to be part of the object.
 						return true;
 					}
-					else if (!strict && (typeof ps.format !== 'string' || typeof vs.format !== 'string')) {
+					// Check subtypes
+					else if (!strict && (typeof ps.subtype !== 'string' || typeof vs.subtype !== 'string')) {
 						return true;
 					}
-					else if (typeof ps.format !== 'string') { // types without format always accepts the same type with a format
+					else if (typeof ps.subtype !== 'string') { // types without subtype always accepts the same type with a subtype
 						return true;
 					}
-					else if (ps.format === vs.format) {
+					else if (ps.subtype === vs.subtype) {
 						return true;
 					}
 				}
@@ -263,18 +264,39 @@ module.exports = class JsonSchemaValidator {
 		return compatible.length > 0;
 	}
 
-	static _convertSchemaToArray(schema) {
-		var schemas = [];
-		// ToDo: schema.not and schema.allOf is not supported - see also class constructor of ProcessSchema in processSchema.js of openeo-web-editor.
-		if (schema.oneOf || schema.anyOf) {
-			schemas = (schema.oneOf || schema.anyOf);
+	static convertSchemaToArray(originalSchema) {
+		var schemaArray = [];
+		if (!originalSchema || typeof originalSchema !== 'object') {
+			return schemaArray;
 		}
-		else if (Array.isArray(schema.type)) {
-			schemas = schema.type.map(t => Object.assign({}, schema, {type: t}));
+
+		// ToDo: schema.not and schema.allOf is not supported - see also class constructor of ProcessSchema in processSchema.js of openeo-web-editor.
+		if (Array.isArray(originalSchema.oneOf)) {
+			schemaArray = originalSchema.oneOf;
+		}
+		else if (Array.isArray(originalSchema.anyOf)) {
+			schemaArray = originalSchema.anyOf;
+		}
+		else if (!Array.isArray(originalSchema)) {
+			schemaArray = [originalSchema];
 		}
 		else {
-			schemas = [schema];
+			schemaArray = originalSchema;
 		}
+
+		let schemas = [];
+		for(let schema of schemaArray) {
+			if (!Utils.isObject(schema)) {
+				continue;
+			}
+			if (Array.isArray(schema.type)) {
+				schemas = schemas.concat(schema.type.map(type => Object.assign({}, schema, {type: type})));
+			}
+			else {
+				schemas.push(schema);
+			}
+		}
+
 		return schemas;
 	}
 

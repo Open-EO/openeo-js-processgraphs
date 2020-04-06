@@ -228,15 +228,15 @@ describe('JSON Schema Validator Tests', () => {
 	var numberNullType = {type: ["number","null"]};
 	var integerType = {type: "integer"};
 	var stringType = {type: "string"};
-	var dateTimeType = {type: "string", format: "date-time"};
+	var dateTimeType = {type: "string", subtype: "date-time", format: "date-time"};
 	var nullType = {type: "null"};
 	var arrayOfAny = {type: 'array', items: {}};
 	var arrayOfNumbers = {type: 'array', items: {type: 'number'}};
 	var arrayOfIntegers = {type: 'array', items: {type: 'integer'}};
 	var anyType = {};
-	var rasterCubeType = {type: "object",format: "raster-cube"};
-	var vectorCubeType = {type: "object",format: "vector-cube"};
-	var dataCubeType = {anyOf: [rasterCubeType, vectorCubeType]};
+	var rasterCubeType = {type: "object", subtype: "raster-cube"};
+	var vectorCubeType = {type: "object", subtype: "vector-cube"};
+	var dataCubeType = [rasterCubeType, vectorCubeType];
 	var load_collection_spatial_extent = [
 		{"title":"Bounding Box","type":"object","subtype":"bounding-box","required":["west","south","east","north"],"properties":{"west":{"description":"West (lower left corner, coordinate axis 1).","type":"number"},"south":{"description":"South (lower left corner, coordinate axis 2).","type":"number"},"east":{"description":"East (upper right corner, coordinate axis 1).","type":"number"},"north":{"description":"North (upper right corner, coordinate axis 2).","type":"number"},"base":{"description":"Base (optional, lower left corner, coordinate axis 3).","type":["number","null"],"default":null},"height":{"description":"Height (optional, upper right corner, coordinate axis 3).","type":["number","null"],"default":null},"crs":{"description":"Coordinate reference system of the extent specified as EPSG code or PROJ definition. Whenever possible, it is recommended to use EPSG codes instead of PROJ definitions. Defaults to `4326` (EPSG code 4326) unless the client explicitly requests a different coordinate reference system.","schema":{"title":"EPSG Code","type":"integer","subtype":"epsg-code","examples":[3857],"default":4326}}}},
 		{"title":"GeoJSON Polygon(s)","type":"object","subtype":"geojson"},
