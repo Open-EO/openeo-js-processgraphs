@@ -82,8 +82,8 @@ module.exports = class ProcessGraphNode {
 		let defaultValue;
 		let pg = this.processGraph;
 		do {
-			if (pg.hasParameter(name)) {
-				return this.getParameter(name);
+			if (pg.hasArgument(name)) {
+				return this.getArgument(name);
 			}
 			if (pg.hasParameterDefault(name)) {
 				defaultValue = this.getParameterDefault(name);

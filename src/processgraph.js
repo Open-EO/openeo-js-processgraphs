@@ -13,7 +13,10 @@ module.exports = class ProcessGraph {
 		// process_graph attribute needed by ProcessGraphNode.getType()
 		this.process_graph = null;
 		if (Utils.isObject(process) && Utils.isObject(process.process_graph)) {
-			this.process_graph = process.process_graph;
+			this.process_graph = Utils.deepClone(process.process_graph);
+			if (!Array.isArray(this.process_graph.parameters)) {
+				this.process_graph.parameters = [];
+			}
 		}
 		this.processRegistry = processRegistry;
 		this.jsonSchemaValidator = jsonSchemaValidator;
@@ -26,7 +29,7 @@ module.exports = class ProcessGraph {
 		this.parsed = false;
 		this.validated = false;
 		this.errors = new ErrorList();
-		this.parameters = {};
+		this.arguments = {};
 	}
 
 	toJSON() {
@@ -122,7 +125,7 @@ module.exports = class ProcessGraph {
 				this.resultNode = node;
 			}
 
-			this.parseArguments(id, node);
+			this.parseNodeArguments(id, node);
 		}
 
 		if (!this.findStartNodes()) {
@@ -160,7 +163,7 @@ module.exports = class ProcessGraph {
 	async execute(parameters = null) {
 		await this.validate();
 		this.reset();
-		this.setParameters(parameters);
+		this.assignParameters(parameters);
 		await this.executeNodes(this.getStartNodes());
 		return this.getResultNode();
 	}
@@ -231,7 +234,7 @@ module.exports = class ProcessGraph {
 		return await process.execute(node);
 	}
 
-	parseArguments(nodeId, node, args) {
+	parseNodeArguments(nodeId, node, args) {
 		if (typeof args === 'undefined') {
 			args = node.arguments;
 		}
@@ -246,11 +249,13 @@ module.exports = class ProcessGraph {
 					args[argumentName] = this.createProcessGraph(arg, node, argumentName);
 					break;
 				case 'parameter':
-					// Nothing to do yet, will be checked at runtime only
+					if (!this.hasParameter(arg.from_parameter)) {
+						this.addParameter(arg.from_parameter);
+					}
 					break;
 				case 'array':
 				case 'object':
-					this.parseArguments(nodeId, node, arg);
+					this.parseNodeArguments(nodeId, node, arg);
 					break;
 			}
 		}
@@ -264,26 +269,54 @@ module.exports = class ProcessGraph {
 		return pg;
 	}
 
-	setParameters(parameters) {
+	assignParameters(parameters) {
 		if (typeof parameters === 'object' && parameters !== null) {
 			this.parameters = parameters;
 		}
 	}
 
-	hasParameterDefault(/*name*/) {
-		return false; // Not implemented yet
+	addParameter(name, description = '', schema = {}) {
+		this.process_graph.parameters.push({
+			name: name,
+			description: description,
+			schema: schema
+		});
 	}
 
-	getParameterDefault(/*name*/) {
-		return null; // Not implemented yet
+	hasParameterDefault(name) {
+		return this.getParameterDefault(name) !== undefined;
+	}
+
+	getParameterDefault(name) {
+		let param = this.getParameter(name);
+		if (param !== null) {
+			return param.default;
+		}
+		return undefined;
 	}
 
 	hasParameter(name) {
-		return typeof this.parameters[name] !== 'undefined';
+		return this.getParameter(name) !== null;
+	}
+
+	getParameters() {
+		return this.process_graph.parameters;
 	}
 
 	getParameter(name) {
-		return this.parameters[name];
+		let params = this.process_graph.parameters.filter(p => p.name === name);
+		if (params.length > 0) {
+			return params[0];
+		}
+		return null;
+	}
+
+	hasArgument(name) {
+		return typeof this.parameters[name] !== 'undefined';
+	}
+
+	getArgument(name) {
+		return this.arguments[name];
 	}
 
 	connectNodes(node, prevNodeId) {
