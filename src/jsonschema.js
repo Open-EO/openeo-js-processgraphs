@@ -2,8 +2,8 @@ const ajv = require('ajv');
 const Utils = require('@openeo/js-commons/src/utils.js');
 const keywords = require('./keywords');
 
-var geoJsonSchema = require("./assets/GeoJSON.json");
-var subtypeSchemas = require("./assets/openeo-api/subtype-schemas.json");
+var geoJsonSchema = require("../assets/GeoJSON.json");
+var subtypeSchemas = require("../assets/openeo-api/subtype-schemas.json");
 
 module.exports = class JsonSchemaValidator {
 
