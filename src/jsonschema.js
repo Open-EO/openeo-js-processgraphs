@@ -284,13 +284,17 @@ module.exports = class JsonSchemaValidator {
 			schemaArray = originalSchema;
 		}
 
+		let splitMultiTypeSchemas = function(schema) {
+			return schema.type.map(type => Object.assign({}, schema, {type: type}));
+		};
+
 		let schemas = [];
 		for(let schema of schemaArray) {
 			if (!Utils.isObject(schema)) {
 				continue;
 			}
 			if (Array.isArray(schema.type)) {
-				schemas = schemas.concat(schema.type.map(type => Object.assign({}, schema, {type: type})));
+				schemas = schemas.concat(splitMultiTypeSchemas(schema));
 			}
 			else {
 				schemas.push(schema);
