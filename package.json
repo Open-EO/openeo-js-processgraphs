@@ -20,7 +20,9 @@
   "main": "src/main.js",
   "files": [
     "dist/*.js",
-    "src/*"
+    "src/*",
+    "assets/GeoJSON.json",
+    "assets/assets/openeo-api/subtype-schemas.json"
   ],
   "dependencies": {
     "@openeo/js-commons": "^1.0.0-rc.2",
