@@ -163,7 +163,7 @@ module.exports = class ProcessGraph {
 	async execute(parameters = null) {
 		await this.validate();
 		this.reset();
-		this.assignParameters(parameters);
+		this.setArguments(parameters);
 		await this.executeNodes(this.getStartNodes());
 		return this.getResultNode();
 	}
@@ -269,12 +269,6 @@ module.exports = class ProcessGraph {
 		return pg;
 	}
 
-	assignParameters(parameters) {
-		if (typeof parameters === 'object' && parameters !== null) {
-			this.parameters = parameters;
-		}
-	}
-
 	addParameter(name, description = '', schema = {}) {
 		this.process_graph.parameters.push({
 			name: name,
@@ -311,8 +305,14 @@ module.exports = class ProcessGraph {
 		return null;
 	}
 
+	setArguments(args) {
+		if (typeof args === 'object' && args !== null) {
+			this.arguments = args;
+		}
+	}
+
 	hasArgument(name) {
-		return typeof this.parameters[name] !== 'undefined';
+		return typeof this.arguments[name] !== 'undefined';
 	}
 
 	getArgument(name) {
