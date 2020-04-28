@@ -9,7 +9,7 @@ describe('Registry Tests', () => {
 	test('Initialize', () => {
 		registry = new ProcessRegistry();
 		expect(registry.count()).toBe(0);
-		registry.addFromResponse({processes: PROCESSES});
+		registry.addAll(PROCESSES);
 		expect(registry.count()).toBe(PROCESSES.length);
 	});
 

@@ -10,18 +10,6 @@ module.exports = class BaseProcess {
 
 		// Make properties easily accessible 
 		Object.assign(this, spec);
-		// Convert parameters to object
-		if (Array.isArray(this.parameters)) {
-			let params = {};
-			for(var param of this.parameters) {
-				params[param.name] = param;
-			}
-			this.parameters = params;
-		}
-		else {
-			this.parameters = {};
-		}
-
 	}
 
 	toJSON() {
@@ -30,7 +18,7 @@ module.exports = class BaseProcess {
 
 	async validate(node) {
 		// Check for arguments we don't support and throw error
-		let unsupportedArgs = node.getArgumentNames().filter(name => !(name in this.parameters));
+		let unsupportedArgs = node.getArgumentNames().filter(name => this.parameters.filter(p => p.name === name) === 0);
 		if (unsupportedArgs.length > 0) {
 			throw new ProcessGraphError('ProcessArgumentUnsupported', {
 				process: this.id,
@@ -39,11 +27,11 @@ module.exports = class BaseProcess {
 		}
 
 		// Validate against JSON Schema
-		for(let name in this.parameters) {
-			let param = this.parameters[name];
+		for(let key in this.parameters) {
+			let param = this.parameters[key];
 
-			let arg = node.getRawArgument(name);
-			if (await this.validateArgument(arg, node, name, param)) {
+			let arg = node.getRawArgument(param.name);
+			if (await this.validateArgument(arg, node, param.name, param)) {
 				continue;
 			}
 		}

@@ -3,18 +3,28 @@ const Utils = require('@openeo/js-commons/src/utils.js');
 
 module.exports = class ProcessRegistry {
 
-	constructor() {
+	constructor(processes = []) {
 		// Keys added to this object must be lowercase!
 		this.processes = {};
+		this.addAll(processes);
 	}
 
-	addFromResponse(response) {
-		for(var i in response.processes) {
-			this.add(response.processes[i]);
+	addAll(processes) {
+		for(var i in processes) {
+			this.add(processes[i]);
 		}
 	}
 
 	add(process) {
+		if (!Utils.isObject(process)) {
+			throw new Error("Invalid process; not an object.");
+		}
+		if (typeof process.toJSON === 'function') {
+			var json = process.toJSON();
+			if (Utils.isObject(json)) {
+				process = json;
+			}
+		}
 		if (typeof process.id !== 'string') {
 			throw new Error("Invalid process; no id specified.");
 		}

@@ -10,8 +10,7 @@ describe('Process Graph Tests', () => {
 
 	var registry;
 	beforeAll(() => {
-		registry = new ProcessRegistry();
-		registry.addFromResponse({processes: PROCESSES});
+		registry = new ProcessRegistry(PROCESSES);
 	});
 
 	test('Parser & Validator > Empty process throws', async () => {
