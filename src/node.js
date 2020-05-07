@@ -26,6 +26,20 @@ module.exports = class ProcessGraphNode {
 		this.computedResult = null;
 	}
 
+	toJSON() {
+		let args = {};
+		for(var key in this.arguments) {
+			let arg = this.arguments[key];
+			args[key] = typeof arg.toJSON === 'function' ? arg.toJSON() : arg;
+		}
+		return {
+			process_id: this.process_id,
+			description: this.description,
+			arguments: args,
+			result: this.isResultNode
+		};
+	}
+
 	getProcessGraph() {
 		return this.processGraph;
 	}
