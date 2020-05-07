@@ -3,7 +3,7 @@ const Utils = require('@openeo/js-commons/src/utils.js');
 
 module.exports = class ProcessGraphNode {
 
-	constructor(node, id, parent) {
+	constructor(node, id, parent = null) {
 		if (typeof id !== 'string' || id.length === 0) {
 			throw new ProcessGraphError('NodeIdInvalid');
 		}
@@ -72,6 +72,39 @@ module.exports = class ProcessGraphNode {
 			return defaultValue;
 		}
 		return this.evaluateArgument(this.arguments[name]);
+	}
+
+	getArgumentRefs(name) {
+		return this.findRefsIn(this.arguments[name]);
+	}
+
+	getRefs() {
+		let store = [];
+		for(var name in this.arguments) {
+			store = store.concat(this.findRefsIn(this.arguments[name]));
+		}
+		return store;
+	}
+
+	findRefsIn(value) {
+		var store = [];
+		var type = ProcessGraphNode.getType(value);
+		switch(type) {
+			case 'result':
+			case 'parameter':
+				store.push(value);
+				break;
+			case 'callback':
+				// ToDo
+				break;
+			case 'array':
+			case 'object':
+				for(var i in value) {
+					store = store.concat(this.findRefsIn(value[i]));
+				}
+				break;
+		}
+		return store;
 	}
 
 	getProcessGraphParameter(name) {
