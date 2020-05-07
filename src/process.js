@@ -46,7 +46,7 @@ module.exports = class BaseProcess {
 		switch(argType) {
 			// Check whether parameter is required
 			case 'undefined':
-				if (param.required) {
+				if (!param.optional) {
 					throw new ProcessGraphError('ProcessArgumentRequired', {
 						process: this.id,
 						argument: parameterName

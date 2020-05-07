@@ -22,10 +22,10 @@
     "dist/*.js",
     "src/*",
     "assets/GeoJSON.json",
-    "assets/assets/openeo-api/subtype-schemas.json"
+    "assets/openeo-api/subtype-schemas.json"
   ],
   "dependencies": {
-    "@openeo/js-commons": "^1.0.0-rc.2",
+    "@openeo/js-commons": "^1.0.0-rc.3",
     "ajv": "^6.12.0"
   },
   "devDependencies": {
