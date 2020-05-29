@@ -30,7 +30,7 @@ module.exports = class ProcessGraphNode {
 		let args = {};
 		for(var key in this.arguments) {
 			let arg = this.arguments[key];
-			args[key] = typeof arg.toJSON === 'function' ? arg.toJSON() : arg;
+			args[key] = Utils.isObject(arg) && typeof arg.toJSON === 'function' ? arg.toJSON() : arg;
 		}
 		return {
 			process_id: this.process_id,
