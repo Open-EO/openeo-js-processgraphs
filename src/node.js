@@ -89,18 +89,14 @@ module.exports = class ProcessGraphNode {
 	}
 
 	getArgumentRefs(name) {
-		return this.findRefsIn(this.arguments[name]);
+		return ProcessGraphNode.getValueRefs(this.arguments[name]);
 	}
 
 	getRefs() {
-		let store = [];
-		for(var name in this.arguments) {
-			store = store.concat(this.findRefsIn(this.arguments[name]));
-		}
-		return store;
+		return ProcessGraphNode.getValueRefs(this.arguments);
 	}
 
-	findRefsIn(value) {
+	static getValueRefs(value) {
 		var store = [];
 		var type = ProcessGraphNode.getType(value);
 		switch(type) {
@@ -114,7 +110,7 @@ module.exports = class ProcessGraphNode {
 			case 'array':
 			case 'object':
 				for(var i in value) {
-					store = store.concat(this.findRefsIn(value[i]));
+					store = store.concat(ProcessGraphNode.getValueRefs(value[i]));
 				}
 				break;
 		}
