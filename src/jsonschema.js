@@ -41,23 +41,32 @@ module.exports = class JsonSchemaValidator {
 	/**
 	 * Returns the indices of provided JSON Schemas that the provided values matches against.
 	 * 
-	 * Returns a single index if a single type is mathcing.
-	 * Returns undefined if no valid type is found.
-	 * Returns an array of indices if multiple types are found.
-	 * 
 	 * @param {Array} types - Array of JSON schemas
 	 * @param {*} value - A value
-	 * @return {(string[]|string|undefined)} - Returns matching indices, see description.
+	 * @param {boolean} preferSubtypes - Removes native types if subtyes are available.
+	 * @return {string[]} - Returns matching indices (as strings!).
 	 */
-	async getTypeForValue(types, value) {
+	async getTypeForValue(types, value, preferSubtypes = true) {
 		var potentialTypes = [];
+		var nativeTypes = [];
 		for(var i in types) {
-			var errors = await this.validateValue(value, types[i]);
-			if (errors.length === 0) {
-				potentialTypes.push(String(i));
-			}
+			try {
+				var errors = await this.validateValue(value, types[i]);
+				if (errors.length > 0) {
+					continue;
+				}
+				if (preferSubtypes && typeof types[i].subtype !== 'string') {
+					nativeTypes.push(String(i));
+				}
+				else {
+					potentialTypes.push(String(i));
+				}
+			} catch (error) {}
 		}
-		return potentialTypes.length > 1 ? potentialTypes : potentialTypes[0];
+		if (preferSubtypes && potentialTypes.length === 0) {
+			potentialTypes = nativeTypes;
+		}
+		return potentialTypes;
 	}
 
 	makeSchema(schema, $async = false) {
@@ -134,6 +143,9 @@ module.exports = class JsonSchemaValidator {
 
 	// Expects API compatible file formats (see GET /file_formats).
 	setFileFormats(fileFormats) {
+		if (!Utils.isObject(fileFormats)) {
+			return;
+		}
 		for(let io of ['input', 'output']) {
 			this.fileFormats[io] = {};
 			if (!Utils.isObject(fileFormats[io])) {
@@ -146,7 +158,9 @@ module.exports = class JsonSchemaValidator {
 	}
 
 	setEpsgCodes(epsgCodes) {
-		this.epsgCodes = epsgCodes.map(v => parseInt(v, 10));
+		if (Array.isArray(epsgCodes)) {
+			this.epsgCodes = epsgCodes.map(v => parseInt(v, 10));
+		}
 	}
 
 	async validateEpsgCode(data) {
@@ -193,6 +207,12 @@ module.exports = class JsonSchemaValidator {
 		return true;
 	}
 
+	async validateWkt2Definition(data) {
+		// To be overridden by end-user application, just doing a very basic check here based on code ported over from proj4js
+		var codeWords = ['PROJECTEDCRS', 'PROJCRS', 'GEOGCS','GEOCCS','PROJCS','LOCAL_CS', 'GEODCRS', 'GEODETICCRS', 'GEODETICDATUM', 'ENGCRS', 'ENGINEERINGCRS'];
+		return codeWords.some(word => data.indexOf(word) > -1);
+	}
+
 	async validateTemporalInterval(data) {
 		if (data[0] === null && data[1] === null) {
 			throw new ajv.ValidationError([{
@@ -216,6 +236,13 @@ module.exports = class JsonSchemaValidator {
 			// throws if invalid
 			await this.validateTemporalInterval(interval);
 		}
+		return true;
+	}
+
+	async validateProcessGraph(data) {
+		const ProcessGraph = require('./processgraph'); // Avoid circular reference
+		var parser = new ProcessGraph(data);
+		parser.parse();
 		return true;
 	}
 
