@@ -9,14 +9,12 @@ module.exports = class ProcessGraph {
 	// ToDo: Also parse and validate other parts of the process, e.g. id, parameters, etc.
 
 	constructor(process, processRegistry = null, jsonSchemaValidator = null) {
-		this.process = process;
-		// process_graph attribute needed by ProcessGraphNode.getType()
-		this.process_graph = null;
-		if (Utils.isObject(process) && Utils.isObject(process.process_graph)) {
-			this.process_graph = Utils.deepClone(process.process_graph);
-			if (!Array.isArray(this.process_graph.parameters)) {
-				this.process_graph.parameters = [];
-			}
+		this.process = Utils.isObject(process) ? Utils.deepClone(process) : {};
+		if (!Utils.isObject(this.process.process_graph)) {
+			this.process.process_graph = {};
+		}
+		if (!Array.isArray(this.process.parameters)) {
+			this.process.parameters = [];
 		}
 		this.processRegistry = processRegistry;
 		this.jsonSchemaValidator = jsonSchemaValidator;
@@ -84,7 +82,7 @@ module.exports = class ProcessGraph {
 		this.errors.add(error);
 	}
 
-	parse() {
+	parse(allowEmptyGraph = false) {
 		if (this.parsed) {
 			return;
 		}
@@ -107,12 +105,15 @@ module.exports = class ProcessGraph {
 		if (!Utils.isObject(this.process)) {
 			throw makeError('ProcessMissing');
 		}
-		if (!Utils.isObject(this.process.process_graph)) {
-			throw makeError('ProcessGraphMissing');
-		}
 
-		for(let id in this.process.process_graph) {
-			this.nodes[id] = this.createNodeInstance(this.process.process_graph[id], id, this);
+		let isEmptyGraph = Utils.size(this.process.process_graph) === 0;
+		if (!isEmptyGraph) {
+			for(let id in this.process.process_graph) {
+				this.nodes[id] = this.createNodeInstance(this.process.process_graph[id], id, this);
+			}
+		}
+		else if (!allowEmptyGraph) {
+			throw makeError('ProcessGraphMissing');
 		}
 
 		for(let id in this.nodes) {
@@ -127,11 +128,13 @@ module.exports = class ProcessGraph {
 
 			this.parseNodeArguments(id, node);
 		}
-
-		if (!this.findStartNodes()) {
+		if (allowEmptyGraph && isEmptyGraph) {
+			// Throw no errors
+		}
+		else if (!this.findStartNodes()) {
 			throw makeError('StartNodeMissing');
 		}
-		if (this.resultNode === null) {
+		else if (this.resultNode === null) {
 			throw makeError('ResultNodeMissing');
 		}
 
@@ -270,7 +273,7 @@ module.exports = class ProcessGraph {
 	}
 
 	addParameter(name, description = '', schema = {}) {
-		this.process_graph.parameters.push({
+		this.process.parameters.push({
 			name: name,
 			description: description,
 			schema: schema
@@ -294,11 +297,11 @@ module.exports = class ProcessGraph {
 	}
 
 	getParameters() {
-		return this.process_graph.parameters;
+		return this.process.parameters;
 	}
 
 	getParameter(name) {
-		let params = this.process_graph.parameters.filter(p => p.name === name);
+		let params = this.process.parameters.filter(p => p.name === name);
 		if (params.length > 0) {
 			return params[0];
 		}

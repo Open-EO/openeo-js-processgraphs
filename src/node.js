@@ -166,6 +166,7 @@ module.exports = class ProcessGraphNode {
 	}
 
 	static getType(obj, reportNullAs = 'null') {
+		const ProcessGraph = require('./processgraph');
 		if (typeof obj === 'object') {
 			if (obj === null) {
 				return reportNullAs;
@@ -173,7 +174,7 @@ module.exports = class ProcessGraphNode {
 			else if (Array.isArray(obj)) {
 				return 'array';
 			}
-			else if(obj.hasOwnProperty("process_graph")) { // This is also true for ProcessGraph instances. Normally, we would do `obj instanceof ProcessGraph` here, but that makes a circular reference and thus we just check for the property
+			else if(obj.hasOwnProperty("process_graph") || obj instanceof ProcessGraph) {
 				return 'callback';
 			}
 			else if(obj.hasOwnProperty("from_node")) {
