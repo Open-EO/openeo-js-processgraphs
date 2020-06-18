@@ -243,17 +243,6 @@ describe('JSON Schema Validator Tests', () => {
 		{"type":"null"}
 	];
 
-	test('getTypeForValue', async () => {
-		expect(await v.getTypeForValue([stringType, nullType], null)).toStrictEqual(["1"]);
-		expect(await v.getTypeForValue([stringType, nullType], "Test")).toStrictEqual(["0"]);
-		expect(await v.getTypeForValue([stringType, nullType], 123)).toStrictEqual([]);
-		expect(await v.getTypeForValue({nil: nullType, string: stringType, datetime: dateTimeType}, "2019-01-01T00:00:00Z")).toStrictEqual(["datetime"]);
-
-		expect(await v.getTypeForValue(load_collection_spatial_extent, {"west":-2.7634,"south":43.0408,"east":-1.121,"north":43.8385})).toStrictEqual(["0"]);
-		expect(await v.getTypeForValue(load_collection_spatial_extent, {"type": "Polygon","coordinates": [[[100.0, 0.0],[101.0, 0.0],[101.0, 1.0],[100.0, 1.0],[100.0, 0.0]]]})).toStrictEqual(["1"]);
-		expect(await v.getTypeForValue(load_collection_spatial_extent, null)).toStrictEqual(["2"]);
-	});
-
 	test('isSchemaCompatible', async () => {
 		expect(await JsonSchemaValidator.isSchemaCompatible(numberNullType, integerType)).toBeTruthy();
 		expect(await JsonSchemaValidator.isSchemaCompatible(integerType, numberNullType)).toBeTruthy();

@@ -38,37 +38,6 @@ module.exports = class JsonSchemaValidator {
 		return "validate" + subtype.replace(/(^|\-)(\w)/g, (a, b, char) => char.toUpperCase());
 	}
 
-	/**
-	 * Returns the indices of provided JSON Schemas that the provided values matches against.
-	 * 
-	 * @param {Array} types - Array of JSON schemas
-	 * @param {*} value - A value
-	 * @param {boolean} preferSubtypes - Removes native types if subtyes are available.
-	 * @return {string[]} - Returns matching indices (as strings!).
-	 */
-	async getTypeForValue(types, value, preferSubtypes = true) {
-		var potentialTypes = [];
-		var nativeTypes = [];
-		for(var i in types) {
-			try {
-				var errors = await this.validateValue(value, types[i]);
-				if (errors.length > 0) {
-					continue;
-				}
-				if (preferSubtypes && typeof types[i].subtype !== 'string') {
-					nativeTypes.push(String(i));
-				}
-				else {
-					potentialTypes.push(String(i));
-				}
-			} catch (error) {}
-		}
-		if (preferSubtypes && potentialTypes.length === 0) {
-			potentialTypes = nativeTypes;
-		}
-		return potentialTypes;
-	}
-
 	makeSchema(schema, $async = false) {
 		schema = Utils.deepClone(schema);
 
