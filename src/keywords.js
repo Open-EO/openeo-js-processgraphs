@@ -2,9 +2,6 @@ const subtypeSchemas = require("../assets/openeo-api/subtype-schemas.json");
 
 module.exports = {
 	subtype: {
-		dependencies: [
-			"type"
-		],
 		metaSchema: {
 			type: "string",
 			enum: Object.keys(subtypeSchemas.definitions)
@@ -12,7 +9,6 @@ module.exports = {
 	},
 	parameters: {
 		dependencies: [
-			"type",
 			"subtype"
 		],
 		metaSchema: {
