@@ -16,6 +16,7 @@ module.exports = class ProcessGraphNode {
 
 		this.id = id;
 		this.processGraph = parent;
+		this.source = node;
 		this.process_id = node.process_id;
 		this.arguments = Utils.isObject(node.arguments) ? JSON.parse(JSON.stringify(node.arguments)) : {};
 		this.description = node.description || null;
@@ -32,12 +33,12 @@ module.exports = class ProcessGraphNode {
 			let arg = this.arguments[key];
 			args[key] = Utils.isObject(arg) && typeof arg.toJSON === 'function' ? arg.toJSON() : arg;
 		}
-		return {
+		return Object.assign({}, this.source, {
 			process_id: this.process_id,
 			description: this.description,
 			arguments: args,
 			result: this.isResultNode
-		};
+		});
 	}
 
 	getProcessGraph() {
