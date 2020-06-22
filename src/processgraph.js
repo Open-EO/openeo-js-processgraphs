@@ -18,6 +18,7 @@ module.exports = class ProcessGraph {
 		}
 		this.processRegistry = processRegistry;
 		this.jsonSchemaValidator = jsonSchemaValidator;
+		this.allowEmptyGraph = false;
 		this.nodes = {};
 		this.startNodes = {};
 		this.resultNode = null;
@@ -82,7 +83,11 @@ module.exports = class ProcessGraph {
 		this.errors.add(error);
 	}
 
-	parse(allowEmptyGraph = false) {
+	allowEmpty(allow = true) {
+		this.allowEmptyGraph = allow;
+	}
+
+	parse() {
 		if (this.parsed) {
 			return;
 		}
@@ -107,13 +112,18 @@ module.exports = class ProcessGraph {
 		}
 
 		let isEmptyGraph = Utils.size(this.process.process_graph) === 0;
-		if (!isEmptyGraph) {
-			for(let id in this.process.process_graph) {
-				this.nodes[id] = this.createNodeInstance(this.process.process_graph[id], id, this);
+		if (isEmptyGraph && this.allowEmptyGraph) {
+			if (this.allowEmptyGraph) {
+				this.parsed = true;
+				return;
+			}
+			else {
+				throw makeError('ProcessGraphMissing');
 			}
 		}
-		else if (!allowEmptyGraph) {
-			throw makeError('ProcessGraphMissing');
+
+		for(let id in this.process.process_graph) {
+			this.nodes[id] = this.createNodeInstance(this.process.process_graph[id], id, this);
 		}
 
 		for(let id in this.nodes) {
@@ -128,10 +138,7 @@ module.exports = class ProcessGraph {
 
 			this.parseNodeArguments(id, node);
 		}
-		if (allowEmptyGraph && isEmptyGraph) {
-			// Throw no errors
-		}
-		else if (!this.findStartNodes()) {
+		if (!this.findStartNodes()) {
 			throw makeError('StartNodeMissing');
 		}
 		else if (this.resultNode === null) {

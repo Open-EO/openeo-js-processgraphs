@@ -13,9 +13,15 @@ describe('Process Graph Tests', () => {
 		registry = new ProcessRegistry(PROCESSES);
 	});
 
-	test('Parser & Validator > Empty process throws', async () => {
+	test('Parser & Validator > Empty process throws by default', async () => {
 		var pg = new ProcessGraph({}, registry);
 		expect(() => pg.parse()).toThrow();
+	});
+
+	test('Parser & Validator > Empty process allowed', async () => {
+		var pg = new ProcessGraph({}, registry);
+		pg.allowEmpty();
+		expect(() => pg.parse()).not.toThrow();
 	});
 
 	test('Parser & Validator > Invalid process graph throws', async () => {
@@ -26,6 +32,7 @@ describe('Process Graph Tests', () => {
 	test('Parser & Validator > Empty process graph fails', async () => {
 		try {
 			var process = {
+				parameters: [],
 				process_graph: {}
 			};
 			var pg = new ProcessGraph(process, registry);
@@ -35,6 +42,7 @@ describe('Process Graph Tests', () => {
 			expect(pg.getErrors()).toStrictEqual(errors);
 			expect(pg.toJSON()).toStrictEqual(process);
 		} catch(e) {
+			console.log(e);
 			expect(e).toBeNull();
 		}
 	});
