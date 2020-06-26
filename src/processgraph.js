@@ -112,7 +112,7 @@ module.exports = class ProcessGraph {
 		}
 
 		let isEmptyGraph = Utils.size(this.process.process_graph) === 0;
-		if (isEmptyGraph && this.allowEmptyGraph) {
+		if (isEmptyGraph) {
 			if (this.allowEmptyGraph) {
 				this.parsed = true;
 				return;
