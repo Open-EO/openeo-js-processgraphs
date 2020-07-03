@@ -22,7 +22,7 @@
     "dist/*.js",
     "src/*",
     "assets/GeoJSON.json",
-    "assets/openeo-api/subtype-schemas.json"
+    "assets/openeo-processes/meta/subtype-schemas.json"
   ],
   "dependencies": {
     "@openeo/js-commons": "^1.0.0-rc.4",
@@ -44,7 +44,7 @@
     "docs": "jsdoc src -r -d docs/ -P package.json -R README.md",
     "build": "npx webpack",
     "compat": "jshint src",
-    "test": "jest --env=jsdom",
-    "test_node": "jest --env=node"
+    "test": "jest --testPathIgnorePatterns assets/ --env=jsdom",
+    "test_node": "jest --testPathIgnorePatterns assets/ --env=node"
   }
 }
