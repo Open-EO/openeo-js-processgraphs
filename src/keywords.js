@@ -1,4 +1,4 @@
-const subtypeSchemas = require("../assets/openeo-processes/meta/subtype-schemas.json");
+const subtypeSchemas = require("../assets/subtype-schemas.json");
 
 module.exports = {
 	subtype: {
