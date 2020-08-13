@@ -18,7 +18,7 @@ module.exports = class ProcessGraphNode {
 		this.processGraph = parent;
 		this.source = node;
 		this.process_id = node.process_id;
-		this.arguments = Utils.isObject(node.arguments) ? JSON.parse(JSON.stringify(node.arguments)) : {};
+		this.arguments = Utils.isObject(node.arguments) ? Utils.deepClone(node.arguments) : {};
 		this.description = node.description || null;
 		this.isResultNode = node.result || false;
 		this.expectsFrom = []; // From which node do we expect results from
@@ -28,11 +28,7 @@ module.exports = class ProcessGraphNode {
 	}
 
 	toJSON() {
-		let args = {};
-		for(var key in this.arguments) {
-			let arg = this.arguments[key];
-			args[key] = Utils.isObject(arg) && typeof arg.toJSON === 'function' ? arg.toJSON() : arg;
-		}
+		let args = Utils.mapObjectValues(this.arguments, arg => Utils.isObject(arg) && typeof arg.toJSON === 'function' ? arg.toJSON() : arg);
 		return Object.assign({}, this.source, {
 			process_id: this.process_id,
 			description: this.description,

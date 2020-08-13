@@ -3,6 +3,7 @@ const JsonSchemaValidator = require('./jsonschema');
 const ProcessGraphError = require('./error');
 const ProcessGraphNode = require('./node');
 const Utils = require('@openeo/js-commons/src/utils.js');
+const ProcessUtils = require('@openeo/js-commons/src/processUtils.js');
 
 module.exports = class ProcessGraph {
 
@@ -12,9 +13,6 @@ module.exports = class ProcessGraph {
 		this.process = Utils.isObject(process) ? Utils.deepClone(process) : {};
 		if (!Utils.isObject(this.process.process_graph)) {
 			this.process.process_graph = {};
-		}
-		if (!Array.isArray(this.process.parameters)) {
-			this.process.parameters = [];
 		}
 		this.processRegistry = processRegistry;
 		this.jsonSchemaValidator = jsonSchemaValidator;
@@ -122,9 +120,7 @@ module.exports = class ProcessGraph {
 			}
 		}
 
-		for(let id in this.process.process_graph) {
-			this.nodes[id] = this.createNodeInstance(this.process.process_graph[id], id, this);
-		}
+		this.nodes = Utils.mapObjectValues(this.process.process_graph, (pg, id) => this.createNodeInstance(pg, id, this));
 
 		for(let id in this.nodes) {
 			var node = this.nodes[id];
@@ -259,7 +255,7 @@ module.exports = class ProcessGraph {
 					args[argumentName] = this.createProcessGraph(arg, node, argumentName);
 					break;
 				case 'parameter':
-					if (!this.hasParameter(arg.from_parameter)) {
+					if (!this.hasParameter(arg.from_parameter) && !this.getCallbackParameter(arg.from_parameter)) {
 						this.addParameter(arg.from_parameter);
 					}
 					break;
@@ -280,10 +276,11 @@ module.exports = class ProcessGraph {
 	}
 
 	addParameter(name, description = '', schema = {}) {
+		if (!Array.isArray(this.process.parameters)) {
+			this.process.parameters = [];
+		}
 		this.process.parameters.push({
-			name: name,
-			description: description,
-			schema: schema
+			name, description, schema
 		});
 	}
 
@@ -304,15 +301,11 @@ module.exports = class ProcessGraph {
 	}
 
 	getParameters() {
-		return this.process.parameters;
+		return Array.isArray(this.process.parameters) ? this.process.parameters : [];
 	}
 
 	getParameter(name) {
-		let params = this.process.parameters.filter(p => p.name === name);
-		if (params.length > 0) {
-			return params[0];
-		}
-		return null;
+		return this.getParameters().find(p => p.name === name) || null;
 	}
 
 	setArguments(args) {
@@ -387,7 +380,7 @@ module.exports = class ProcessGraph {
 
 	getProcess(node) {
 		if (this.processRegistry === null) {
-			throw new Error("Process Registry not set.");
+			return null;
 		}
 		var process = this.processRegistry.get(node.process_id);
 		if (process === null) {
@@ -397,56 +390,26 @@ module.exports = class ProcessGraph {
 	}
 
 	getParentProcessId() {
-		if(this.node) {
-			return this.node.process_id;
+		if(this.getParentNode()) {
+			return this.getParentNode().process_id;
 		}
 		return null;
 	}
 
 	getParentProcess() {
 		if (this.processRegistry === null) {
-			throw new Error("Process Registry not set.");
+			return null;
 		}
 		return this.processRegistry.get(this.getParentProcessId());
 	}
 
 	getCallbackParameter(name) {
 		let cbParams = this.getCallbackParameters();
-		let result = cbParams.filter(p => p.name === name);
-		if (result.length === 1) {
-			return result[0];
-		}
-		return null;
+		return cbParams.find(p => p.name === name) || null;
 	}
 
-	getCallbackParameters() {
-		var process = this.getParentProcess();
-		if (!this.parentParameterName || !Utils.isObject(process) || !Array.isArray(process.parameters)) {
-			return [];
-		}
-
-		var schema = process.parameters.filter(p => p.name === this.parentParameterName);
-		if (schema.length === 1 && Array.isArray(schema[0].parameters)) {
-			return schema[0].parameters;
-		}
-
-		// ToDo: If a process parameter supports multiple different callbacks, i.e. reduce with either an array of two separate values, this
-		// can't be separated accordingly and we just return all potential values. So it might happen that people get a successful validation
-		// but they used the wrong callback parameters.
-		// See issue https://github.com/Open-EO/openeo-js-processgraphs/issues/1
-
-		var cbParams = [];
-		var choice = Array.isArray(schema) ? schema : (schema.anyOf || schema.oneOf || schema.allOf);
-		if (Array.isArray(choice)) {
-			for(let i in choice) {
-				var p = choice[i];
-				if (Array.isArray(p.parameters)) {
-					cbParams = cbParams.concat(p.parameters);
-				}
-			}
-		}
-
-		return cbParams;
+	getCallbackParameters() {		
+		return ProcessUtils.getCallbackParametersForProcess(this.getParentProcess(), this.parentParameterName);
 	}
 
 };

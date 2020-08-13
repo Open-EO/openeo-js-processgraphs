@@ -1,5 +1,6 @@
 const ajv = require('ajv');
 const Utils = require('@openeo/js-commons/src/utils.js');
+const ProcessUtils = require('@openeo/js-commons/src/processUtils.js');
 const keywords = require('./keywords');
 
 var geoJsonSchema = require("../assets/GeoJSON.json");
@@ -81,12 +82,6 @@ module.exports = class JsonSchemaValidator {
 			}
 		}
 	}
-
-/*	validateSchema(schema) {
-		schema = this.makeSchema(schema);
-		let result = this.ajv.compile(schema);
-		return result.errors || [];
-	} */
 
 	async validateSubtype(subtype, data, schema) {
 		if (typeof subtypeSchemas.definitions[subtype] !== 'undefined') {
@@ -219,10 +214,10 @@ module.exports = class JsonSchemaValidator {
 	// So would a value compatible with valueSchema be accepted by paramSchema?
 	// allowValueAsElements: If true, it checks whether the valueSchema would be allowed as part of an array or object. For example number could be allowed as part of an array of numbers.
 	static isSchemaCompatible(paramSchema, valueSchema, strict = false, allowValueAsElements = false) {
-		var paramSchemas = JsonSchemaValidator.convertSchemaToArray(paramSchema);
-		var valueSchemas = JsonSchemaValidator.convertSchemaToArray(valueSchema);
+		var paramSchemas = ProcessUtils.normalizeJsonSchema(paramSchema, true);
+		var valueSchemas = ProcessUtils.normalizeJsonSchema(valueSchema, true);
 
-		var compatible = paramSchemas.filter(ps => {
+		var compatible = paramSchemas.findIndex(ps => {
 			for(var i in valueSchemas) {
 				var vs = valueSchemas[i];
 				if (typeof ps.type !== 'string' || (!strict && typeof vs.type !== 'string')) { // "any" type is always compatible
@@ -257,47 +252,7 @@ module.exports = class JsonSchemaValidator {
 			return false;
 		});
 
-		return compatible.length > 0;
-	}
-
-	static convertSchemaToArray(originalSchema) {
-		var schemaArray = [];
-		if (!originalSchema || typeof originalSchema !== 'object') {
-			return schemaArray;
-		}
-
-		// ToDo: schema.not and schema.allOf is not supported - see also class constructor of ProcessSchema in processSchema.js of openeo-web-editor.
-		if (Array.isArray(originalSchema.oneOf)) {
-			schemaArray = originalSchema.oneOf;
-		}
-		else if (Array.isArray(originalSchema.anyOf)) {
-			schemaArray = originalSchema.anyOf;
-		}
-		else if (!Array.isArray(originalSchema)) {
-			schemaArray = [originalSchema];
-		}
-		else {
-			schemaArray = originalSchema;
-		}
-
-		let splitMultiTypeSchemas = function(schema) {
-			return schema.type.map(type => Object.assign({}, schema, {type: type}));
-		};
-
-		let schemas = [];
-		for(let schema of schemaArray) {
-			if (!Utils.isObject(schema)) {
-				continue;
-			}
-			if (Array.isArray(schema.type)) {
-				schemas = schemas.concat(splitMultiTypeSchemas(schema));
-			}
-			else {
-				schemas.push(schema);
-			}
-		}
-
-		return schemas;
+		return compatible !== -1;
 	}
 
 };

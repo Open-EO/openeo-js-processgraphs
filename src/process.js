@@ -18,7 +18,7 @@ module.exports = class BaseProcess {
 
 	async validate(node) {
 		// Check for arguments we don't support and throw error
-		let unsupportedArgs = node.getArgumentNames().filter(name => this.parameters.filter(p => p.name === name) === 0);
+		let unsupportedArgs = node.getArgumentNames().filter(name => this.parameters.findIndex(p => p.name === name) === -1);
 		if (unsupportedArgs.length > 0) {
 			throw new ProcessGraphError('ProcessArgumentUnsupported', {
 				process: this.id,

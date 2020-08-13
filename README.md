@@ -6,7 +6,7 @@
 
 This library's version is **1.0.0-beta.3** and supports **openEO API version 1.0.x**.
 
-This repository was split up from [openeo-js-commons](https://github.com/Open-EO/openeo-js-commons). Old releases can be found there.
+This repository was split apart from [openeo-js-commons](https://github.com/Open-EO/openeo-js-commons). Old releases can be found there.
 
 ## Features
 - Parsing a process graph
