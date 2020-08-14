@@ -1,7 +1,12 @@
 const ProcessGraphError = require('./error');
-const Utils = require('@openeo/js-commons/src/utils.js');
+const Utils = require('./utils');
 
-module.exports = class ProcessGraphNode {
+/**
+ * A Process graph node.
+ * 
+ * @class
+ */
+class ProcessGraphNode {
 
 	constructor(node, id, parent = null) {
 		if (typeof id !== 'string' || id.length === 0) {
@@ -24,7 +29,7 @@ module.exports = class ProcessGraphNode {
 		this.expectsFrom = []; // From which node do we expect results from
 		this.receivedFrom = []; // From which node have received results from so far
 		this.passesTo = [];
-		this.computedResult = null;
+		this.computedResult = undefined;
 	}
 
 	toJSON() {
@@ -53,29 +58,32 @@ module.exports = class ProcessGraphNode {
 	}
 
 	hasArgument(name) {
-		return (name in this.arguments);
+		return typeof this.arguments[name] !== 'undefined';
 	}
 
 	getArgumentType(name) {
-		return ProcessGraphNode.getType(this.arguments[name]);
+		return Utils.getType(this.arguments[name]);
 	}
 
 	getRawArgument(name) {
-		return this.arguments[name];
+		return Utils.isObject(this.source) && Utils.isObject(this.source.arguments) ? this.source.arguments[name] : undefined;
 	}
 
 	getRawArgumentValue(name) {
 		var arg = this.getRawArgument(name);
-		switch(ProcessGraphNode.getType(arg)) {
+		switch(Utils.getType(arg)) {
 			case 'result':
 				return arg.from_node;
-			case 'callback':
-				return arg;
 			case 'parameter':
 				return arg.from_parameter;
+			case 'callback':
 			default:
 				return arg;
 		}
+	}
+
+	getParsedArgument(name) {
+		return this.arguments[name];
 	}
 
 	getArgument(name, defaultValue = undefined) {
@@ -86,32 +94,11 @@ module.exports = class ProcessGraphNode {
 	}
 
 	getArgumentRefs(name) {
-		return ProcessGraphNode.getValueRefs(this.arguments[name]);
+		return Utils.getRefs(this.arguments[name], false);
 	}
 
 	getRefs() {
-		return ProcessGraphNode.getValueRefs(this.arguments);
-	}
-
-	static getValueRefs(value) {
-		var store = [];
-		var type = ProcessGraphNode.getType(value);
-		switch(type) {
-			case 'result':
-			case 'parameter':
-				store.push(value);
-				break;
-			case 'callback':
-				// ToDo
-				break;
-			case 'array':
-			case 'object':
-				for(var i in value) {
-					store = store.concat(ProcessGraphNode.getValueRefs(value[i]));
-				}
-				break;
-		}
-		return store;
+		return Utils.getRefs(this.arguments, false);
 	}
 
 	getProcessGraphParameter(name) {
@@ -135,15 +122,17 @@ module.exports = class ProcessGraphNode {
 			return defaultValue;
 		}
 		
-		throw new ProcessGraphError('ProcessGraphParameterMissing', {
-			argument: name,
-			node_id: this.id,
-			process_id: this.process_id
-		});
+		if (!this.processGraph.allowUndefinedParameterRefs && !this.processGraph.getCallbackParameter(name)) {
+			throw new ProcessGraphError('ProcessGraphParameterMissing', {
+				argument: name,
+				node_id: this.id,
+				process_id: this.process_id
+			});
+		}
 	}
 
 	evaluateArgument(arg) {
-		var type = ProcessGraphNode.getType(arg);
+		var type = Utils.getType(arg);
 		switch(type) {
 			case 'result':
 				return this.processGraph.getNode(arg.from_node).getResult();
@@ -153,38 +142,14 @@ module.exports = class ProcessGraphNode {
 				return this.getProcessGraphParameter(arg.from_parameter);
 			case 'array':
 			case 'object':
+				let copy = type === 'array' ? [] : {};
 				for(var i in arg) {
-					arg[i] = this.evaluateArgument(arg[i]);
+					copy[i] = this.evaluateArgument(arg[i]);
 				}
-				return arg;
+				return copy;
 			default:
 				return arg;
 		}
-	}
-
-	static getType(obj, reportNullAs = 'null') {
-		const ProcessGraph = require('./processgraph');
-		if (typeof obj === 'object') {
-			if (obj === null) {
-				return reportNullAs;
-			}
-			else if (Array.isArray(obj)) {
-				return 'array';
-			}
-			else if(obj.hasOwnProperty("process_graph") || obj instanceof ProcessGraph) {
-				return 'callback';
-			}
-			else if(obj.hasOwnProperty("from_node")) {
-				return 'result';
-			}
-			else if(obj.hasOwnProperty("from_parameter")) {
-				return 'parameter';
-			}
-			else {
-				return 'object';
-			}
-		}
-		return (typeof obj);
 	}
 
 	isStartNode() {
@@ -192,24 +157,34 @@ module.exports = class ProcessGraphNode {
 	}
 
 	addPreviousNode(node) {
-		this.expectsFrom.push(node);
+		if (!this.expectsFrom.find(other => other.id === node.id)) {
+			this.expectsFrom.push(node);
+		}
 	}
 
 	getPreviousNodes() {
-		return this.expectsFrom;
+		// Sort nodes to ensure a consistent execution order
+		return this.expectsFrom.sort((a,b) => a.id.localeCompare(b.id));
 	}
 
 	addNextNode(node) {
-		this.passesTo.push(node);
+		if (!this.passesTo.find(other => other.id === node.id)) {
+			this.passesTo.push(node);
+		}
 	}
 
 	getNextNodes() {
-		return this.passesTo;
+		// Sort nodes to ensure a consistent execution order
+		return this.passesTo.sort((a,b) => a.id.localeCompare(b.id));
 	}
 
 	reset() {
-		this.computedResult = null;
+		this.computedResult = undefined;
 		this.receivedFrom = [];
+	}
+
+	getDescription() {
+		return this.description;
 	}
 
 	setDescription(description) {
@@ -236,4 +211,6 @@ module.exports = class ProcessGraphNode {
 		return (this.expectsFrom.length === this.receivedFrom.length); // all dependencies solved?
 	}
 
-};
+}
+
+module.exports = ProcessGraphNode;

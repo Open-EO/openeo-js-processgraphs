@@ -1,12 +1,18 @@
 const ajv = require('ajv');
-const Utils = require('@openeo/js-commons/src/utils.js');
+const Utils = require('./utils');
 const ProcessUtils = require('@openeo/js-commons/src/processUtils.js');
 const keywords = require('./keywords');
 
 var geoJsonSchema = require("../assets/GeoJSON.json");
 var subtypeSchemas = require("../assets/subtype-schemas.json");
+const ProcessGraph = require('./processgraph');
 
-module.exports = class JsonSchemaValidator {
+/**
+ * JSON Schema Validator.
+ * 
+ * @class
+ */
+class JsonSchemaValidator {
 
 	constructor() {
 		this.ajv = new ajv({
@@ -32,6 +38,7 @@ module.exports = class JsonSchemaValidator {
 			output: null
 		};
 		this.epsgCodes = null;
+		this.processRegistry = null;
 	}
 
 	getFunctionName(subtype) {
@@ -90,6 +97,11 @@ module.exports = class JsonSchemaValidator {
 			Object.assign(schema, subtypeSchemas.definitions[subtype]);
 			// Remove subtype to avoid recursion
 			delete schema.subtype;
+			if (subtype === 'process-graph') {
+				// Special case: all validation will be done in validateProcessGraph()
+				delete schema.required;
+				delete schema.properties;
+			}
 		}
 		else {
 			schema = this.makeSchema(schema, true);
@@ -173,8 +185,24 @@ module.exports = class JsonSchemaValidator {
 
 	async validateWkt2Definition(data) {
 		// To be overridden by end-user application, just doing a very basic check here based on code ported over from proj4js
-		var codeWords = ['PROJECTEDCRS', 'PROJCRS', 'GEOGCS','GEOCCS','PROJCS','LOCAL_CS', 'GEODCRS', 'GEODETICCRS', 'GEODETICDATUM', 'ENGCRS', 'ENGINEERINGCRS'];
-		return codeWords.some(word => data.indexOf(word) > -1);
+		var codeWords = [
+			'BOUNDCRS',
+			'COMPOUNDCRS',
+			'ENGCRS', 'ENGINEERINGCRS',
+			'GEODCRS', 'GEODETICCRS',
+			'GEOGCRS', 'GEOGRAPHICCRS',
+			'PARAMETRICCRS',
+			'PROJCRS', 'PROJECTEDCRS',
+			'TIMECRS',
+			'VERTCRS', 'VERTICALCRS'
+		];
+		data = data.toUpperCase();
+		if (!codeWords.some(word => data.indexOf(word) !== -1)) {
+			throw new ajv.ValidationError([{
+				message: "Invalid WKT2 string specified."
+			}]);
+		}
+		return true;
 	}
 
 	async validateTemporalInterval(data) {
@@ -203,11 +231,30 @@ module.exports = class JsonSchemaValidator {
 		return true;
 	}
 
+	setProcessGraphParser(processGraph) {
+		this.processGraph = processGraph;
+	}
+
 	async validateProcessGraph(data) {
-		const ProcessGraph = require('./processgraph'); // Avoid circular reference
-		var parser = new ProcessGraph(data);
-		parser.parse();
-		return true;
+		try {
+			const ProcessGraph = require('./processgraph');
+			var parser;
+			if (data instanceof ProcessGraph) {
+				parser = data;
+			}
+			else if (this.processGraph) {
+				parser = this.processGraph.createProcessGraphInstance(data);
+			}
+			else {
+				parser = new ProcessGraph(data, null, this);
+			}
+			await parser.validate();
+			return true;
+		} catch (error) {
+			throw new ajv.ValidationError([{
+				message: error.message
+			}]);
+		}
 	}
 
 	// Checks whether the valueSchema is compatible to the paramSchema.
@@ -255,4 +302,6 @@ module.exports = class JsonSchemaValidator {
 		return compatible !== -1;
 	}
 
-};
+}
+
+module.exports = JsonSchemaValidator;

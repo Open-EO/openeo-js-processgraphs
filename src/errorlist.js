@@ -1,4 +1,9 @@
-module.exports = class ErrorList {
+/**
+ * A list of errors.
+ * 
+ * @class
+ */
+class ErrorList {
 
 	constructor() {
 		this.errors = [];
@@ -50,4 +55,6 @@ module.exports = class ErrorList {
 		return this.errors;
 	}
 
-};
+}
+
+module.exports = ErrorList;

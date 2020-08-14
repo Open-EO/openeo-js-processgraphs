@@ -2,23 +2,22 @@ const ErrorList = require('./errorlist');
 const JsonSchemaValidator = require('./jsonschema');
 const ProcessGraphError = require('./error');
 const ProcessGraphNode = require('./node');
-const Utils = require('@openeo/js-commons/src/utils.js');
+const Utils = require('./utils');
 const ProcessUtils = require('@openeo/js-commons/src/processUtils.js');
 
-module.exports = class ProcessGraph {
+/**
+ * Process parser, validator and executor.
+ * 
+ * @class
+ */
+class ProcessGraph {
 
 	// ToDo: Also parse and validate other parts of the process, e.g. id, parameters, etc.
 
 	constructor(process, processRegistry = null, jsonSchemaValidator = null) {
-		this.process = Utils.isObject(process) ? Utils.deepClone(process) : {};
-		if (!Utils.isObject(this.process.process_graph)) {
-			this.process.process_graph = {};
-		}
-		this.processRegistry = processRegistry;
-		this.jsonSchemaValidator = jsonSchemaValidator;
-		this.allowEmptyGraph = false;
+		this.process = process;
 		this.nodes = {};
-		this.startNodes = {};
+		this.startNodes = [];
 		this.resultNode = null;
 		this.children = [];
 		this.parentNode = null;
@@ -27,6 +26,12 @@ module.exports = class ProcessGraph {
 		this.validated = false;
 		this.errors = new ErrorList();
 		this.arguments = {};
+		// Sub process graphs need to copy these:
+		this.processRegistry = processRegistry;
+		this.jsonSchemaValidator = jsonSchemaValidator;
+		this.allowEmptyGraph = false;
+		this.fillParameters = true;
+		this.allowUndefinedParameterRefs = true;
 	}
 
 	toJSON() {
@@ -37,6 +42,7 @@ module.exports = class ProcessGraph {
 		if (this.jsonSchemaValidator === null) {
 			this.jsonSchemaValidator = this.createJsonSchemaValidatorInstance();
 		}
+		this.jsonSchemaValidator.setProcessGraphParser(this);
 		return this.jsonSchemaValidator;
 	}
 
@@ -49,7 +55,15 @@ module.exports = class ProcessGraph {
 	}
 
 	createProcessGraphInstance(process) {
-		return new ProcessGraph(process, this.processRegistry, this.getJsonSchemaValidator());
+		let pg = new ProcessGraph(process, this.processRegistry, this.getJsonSchemaValidator());
+		return this.copyProcessGraphInstanceProperties(pg);
+	}
+
+	copyProcessGraphInstanceProperties(pg) {
+		pg.allowEmptyGraph = this.allowEmptyGraph;
+		pg.fillParameters = this.fillParameters;
+		pg.allowUndefinedParameterRefs = this.allowUndefinedParameterRefs;
+		return pg;
 	}
 
 	getParentNode() {
@@ -81,6 +95,17 @@ module.exports = class ProcessGraph {
 		this.errors.add(error);
 	}
 
+	allowUndefinedParameters(allow = true) {
+		this.allowUndefinedParameterRefs = allow;
+	}
+
+	fillUndefinedParameters(fill = true) {
+		if (fill) {
+			this.allowUndefinedParameterRefs = true;
+		}
+		this.fillParameters = fill;
+	}
+
 	allowEmpty(allow = true) {
 		this.allowEmptyGraph = allow;
 	}
@@ -109,8 +134,7 @@ module.exports = class ProcessGraph {
 			throw makeError('ProcessMissing');
 		}
 
-		let isEmptyGraph = Utils.size(this.process.process_graph) === 0;
-		if (isEmptyGraph) {
+		if (Utils.size(this.process.process_graph) === 0) {
 			if (this.allowEmptyGraph) {
 				this.parsed = true;
 				return;
@@ -124,7 +148,6 @@ module.exports = class ProcessGraph {
 
 		for(let id in this.nodes) {
 			var node = this.nodes[id];
-
 			if (node.isResultNode) {
 				if (this.resultNode !== null) {
 					throw makeError('MultipleResultNodes');
@@ -134,11 +157,15 @@ module.exports = class ProcessGraph {
 
 			this.parseNodeArguments(id, node);
 		}
-		if (!this.findStartNodes()) {
-			throw makeError('StartNodeMissing');
-		}
-		else if (this.resultNode === null) {
+		if (this.resultNode === null) {
 			throw makeError('ResultNodeMissing');
+		}
+
+		// Find/Cache start nodes, only possible after parseNodeArguments have been called for all nodes
+		// Sort nodes to ensure a consistent execution order
+		this.startNodes = Object.values(this.nodes).filter(node => node.isStartNode()).sort((a,b) => a.id.localeCompare(b.id));
+		if (this.startNodes.length === 0) {
+			throw makeError('StartNodeMissing');
 		}
 
 		this.parsed = true;
@@ -146,7 +173,12 @@ module.exports = class ProcessGraph {
 
 	async validate(throwOnErrors = true) {
 		if (this.validated) {
-			return null;
+			if (throwOnErrors && this.errors.count() > 0) {
+				throw this.errors.first();
+			}
+			else {
+				return this.errors;
+			}
 		}
 
 		this.validated = true;
@@ -167,6 +199,7 @@ module.exports = class ProcessGraph {
 	}
 
 	async execute(parameters = null) {
+		this.allowUndefinedParameters(false);
 		await this.validate();
 		this.reset();
 		this.setArguments(parameters);
@@ -210,7 +243,9 @@ module.exports = class ProcessGraph {
 
 	async validateNode(node) {
 		var process = this.getProcess(node);
-		return await process.validate(node);
+		if (process) {
+			return await process.validate(node);
+		}
 	}
 
 	async executeNodes(nodes, previousNode = null) {
@@ -232,7 +267,7 @@ module.exports = class ProcessGraph {
 
 		});
 
-		return Promise.all(promises);
+		return await Promise.all(promises);
 	}
 
 	async executeNode(node) {
@@ -246,7 +281,7 @@ module.exports = class ProcessGraph {
 		}
 		for(var argumentName in args) {
 			var arg = args[argumentName];
-			var type = ProcessGraphNode.getType(arg);
+			var type = Utils.getType(arg);
 			switch(type) {
 				case 'result':
 					this.connectNodes(node, arg.from_node);
@@ -255,7 +290,7 @@ module.exports = class ProcessGraph {
 					args[argumentName] = this.createProcessGraph(arg, node, argumentName);
 					break;
 				case 'parameter':
-					if (!this.hasParameter(arg.from_parameter) && !this.getCallbackParameter(arg.from_parameter)) {
+					if (this.fillParameters && !this.hasParameter(arg.from_parameter) && !this.getCallbackParameter(arg.from_parameter)) {
 						this.addParameter(arg.from_parameter);
 					}
 					break;
@@ -331,18 +366,6 @@ module.exports = class ProcessGraph {
 		prevNode.addNextNode(node);
 	}
 
-	findStartNodes() {
-		var found = false;
-		for(var id in this.nodes) {
-			var node = this.nodes[id];
-			if (node.isStartNode()) {
-				this.startNodes[id] = node;
-				found = true;
-			}
-		}
-		return found;
-	}
-
 	reset() {
 		for(var id in this.nodes) {
 			this.nodes[id].reset();
@@ -355,15 +378,15 @@ module.exports = class ProcessGraph {
 	}
 
 	getStartNodes() {
-		return Object.values(this.startNodes);
+		return this.startNodes;
 	}
 
 	getStartNodeIds() {
-		return Object.keys(this.startNodes);
+		return this.startNodes.map(node => node.id);
 	}
 
 	getNode(nodeId) {
-		return this.nodes[nodeId];
+		return nodeId in this.nodes ? this.nodes[nodeId] : null;
 	}
 
 	getNodeCount() {
@@ -378,13 +401,23 @@ module.exports = class ProcessGraph {
 		return this.errors;
 	}
 
-	getProcess(node) {
+	/**
+	 * Gets the process for the given process ID or node.
+	 * 
+	 * @param {ProcessGraphNode|string} id 
+	 * @returns {object|null}
+	 * @throws {ProcessGraphError} - ProcessUnsupported
+	 */
+	getProcess(id) {
 		if (this.processRegistry === null) {
 			return null;
 		}
-		var process = this.processRegistry.get(node.process_id);
+		if (id instanceof ProcessGraphNode) {
+			id = id.process_id;
+		}
+		var process = this.processRegistry.get(id);
 		if (process === null) {
-			throw new ProcessGraphError('ProcessUnsupported', {process: node.process_id});
+			throw new ProcessGraphError('ProcessUnsupported', {process: id});
 		}
 		return process;
 	}
@@ -412,4 +445,6 @@ module.exports = class ProcessGraph {
 		return ProcessUtils.getCallbackParametersForProcess(this.getParentProcess(), this.parentParameterName);
 	}
 
-};
+}
+
+module.exports = ProcessGraph;

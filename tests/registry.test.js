@@ -13,11 +13,8 @@ describe('Registry Tests', () => {
 		expect(registry.count()).toBe(PROCESSES.length);
 	});
 
-	var processName = "absolute";
 	test('Get process', () => {
-		var absolute = registry.get(processName);
-		expect(absolute).toBeInstanceOf(BaseProcess);
-		expect(absolute.id).toBe(processName);
+		checkAbsolute(registry);
 
 		var x = registry.get("unknown-process");
 		expect(x).toBeNull();
@@ -29,4 +26,32 @@ describe('Registry Tests', () => {
 		expect(schemas.length).toBe(PROCESSES.length);
 	});
 
+	test('Get all specifications', () => {
+		expect(registry.all()).toEqual(PROCESSES.map(p => new BaseProcess(p)));
+	});
+
+	test('Add specifications individually', () => {
+		expect(() => registry.add(null)).toThrowError();
+		expect(() => registry.add({description: "Test"})).toThrowError();
+
+		let registry2 = new ProcessRegistry();
+		class absolute {
+			constructor() {
+				this.spec = registry.get("absolute");
+			}
+			toJSON() {
+				return this.spec;
+			}
+		}
+		registry2.add(new absolute());
+		checkAbsolute(registry2);
+	});
+
   });
+
+  function checkAbsolute(reg) {
+		var processName = "absolute";
+		var absolute = reg.get(processName);
+		expect(absolute).toBeInstanceOf(BaseProcess);
+		expect(absolute.id).toBe(processName);
+  }

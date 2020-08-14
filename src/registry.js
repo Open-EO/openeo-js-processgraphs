@@ -1,7 +1,12 @@
 const Process = require('./process');
-const Utils = require('@openeo/js-commons/src/utils.js');
+const Utils = require('./utils');
 
-module.exports = class ProcessRegistry {
+/**
+ * Central registry for processes.
+ * 
+ * @class
+ */
+class ProcessRegistry {
 
 	constructor(processes = []) {
 		// Keys added to this object must be lowercase!
@@ -19,7 +24,9 @@ module.exports = class ProcessRegistry {
 		if (!Utils.isObject(process)) {
 			throw new Error("Invalid process; not an object.");
 		}
-		if (typeof process.toJSON === 'function') {
+
+		let isImpl = process instanceof Process;
+		if (!isImpl && typeof process.toJSON === 'function') {
 			var json = process.toJSON();
 			if (Utils.isObject(json)) {
 				process = json;
@@ -28,7 +35,7 @@ module.exports = class ProcessRegistry {
 		if (typeof process.id !== 'string') {
 			throw new Error("Invalid process; no id specified.");
 		}
-		this.processes[process.id.toLowerCase()] = new Process(process);
+		this.processes[process.id.toLowerCase()] = isImpl ? process : new Process(process);
 	}
 
 	count() {
@@ -53,4 +60,6 @@ module.exports = class ProcessRegistry {
 		return Object.values(this.processes).map(impl => impl.toJSON());
 	}
 
-};
+}
+
+module.exports = ProcessRegistry;

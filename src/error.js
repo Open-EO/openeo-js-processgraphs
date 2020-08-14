@@ -1,4 +1,4 @@
-const Utils = require('@openeo/js-commons/src/utils.js');
+const Utils = require('./utils');
 
 const MESSAGES = {
 	"MultipleResultNodes": "Multiple result nodes specified for process graph.",
@@ -20,7 +20,12 @@ const MESSAGES = {
 	"ProcessMissing": "No process specified"
 };
 
-module.exports = class ProcessGraphError extends Error {
+/**
+ * An error class for this library.
+ * 
+ * @class
+ */
+class ProcessGraphError extends Error {
 
 	constructor(codeOrMsg, variables = {}) {
 		super();
@@ -42,4 +47,6 @@ module.exports = class ProcessGraphError extends Error {
 		};
 	}
 
-};
+}
+
+module.exports = ProcessGraphError;

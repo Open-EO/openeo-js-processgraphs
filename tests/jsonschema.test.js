@@ -1,6 +1,8 @@
 const JsonSchemaValidator = require('../src/jsonschema');
+const ProcessRegistry = require('../src/registry');
+const Utils = require('../src/utils');
 const epsg = require('epsg-index/all.json');
-const Utils = require('@openeo/js-commons/src/utils.js');
+const PROCESSES = require('./assets/processes.json');
 
 process.on('unhandledRejection', r => console.log(r));
 
@@ -56,6 +58,10 @@ describe('JSON Schema Validator Tests', () => {
 		await expectError(v, -4326, epsgSchema);
 	});
 	test('epsg-code with list', async () => {
+		expect(Utils.size(v.epsgCodes)).toBe(0);
+		v.setEpsgCodes(null);
+		expect(Utils.size(v.epsgCodes)).toBe(0);
+
 		v.setEpsgCodes(Object.keys(epsg));
 		await expectSuccess(v, 2000, epsgSchema);
 		await expectSuccess(v, 3857, epsgSchema);
@@ -160,6 +166,17 @@ describe('JSON Schema Validator Tests', () => {
 		"type": "string",
 		"subtype": "output-format"
 	};
+
+	test('input/output-format', async() => {
+		expect(v.fileFormats).toHaveProperty("input");
+		expect(v.fileFormats).toHaveProperty("output");
+		expect(Utils.size(v.fileFormats.input)).toBe(0);
+		expect(Utils.size(v.fileFormats.output)).toBe(0);
+		v.setFileFormats(null);
+		expect(Utils.size(v.fileFormats.input)).toBe(0);
+		expect(Utils.size(v.fileFormats.output)).toBe(0);
+	});
+
 	test('output-format', async () => {
 		// No file formats set => succeed always
 		await expectSuccess(v, "GTiff", outputFormatSchema);
@@ -190,15 +207,54 @@ describe('JSON Schema Validator Tests', () => {
 		await expectError(v, "", inputFormatSchema);
 	});
 
+	var wkt2Value = 'GEOGCRS["WGS 84",DATUM["World Geodetic System 1984",ELLIPSOID["WGS 84",6378137,298.257223563,LENGTHUNIT["metre",1]]],PRIMEM["Greenwich",0,ANGLEUNIT["degree",0.0174532925199433]],CS[ellipsoidal,2],AXIS["geodetic latitude (Lat)",north,ORDER[1],ANGLEUNIT["degree",0.0174532925199433]],AXIS["geodetic longitude (Lon)",east,ORDER[2],ANGLEUNIT["degree",0.0174532925199433]],ID["EPSG",4326]]';
+	var wkt1Value = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AXIS["Latitude",NORTH],AXIS["Longitude",EAST],AUTHORITY["EPSG","4326"]]';
+	var projValue = "+proj=moll +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs";
 	var projSchema = {
 		"type": "string",
 		"subtype": "proj-definition"
 	};
 	test('proj-definition', async () => {
 		await expectSuccess(v, "+proj=utm +zone=32 +datum=WGS84", projSchema);
-		await expectSuccess(v, "+proj=moll +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs", projSchema);
+		await expectSuccess(v, projValue, projSchema);
+		await expectSuccess(v, projValue.toUpperCase(), projSchema);
+		await expectError(v, wkt1Value, projSchema);
+		await expectError(v, wkt2Value, projSchema);
 		await expectError(v, "EPSG:32632", projSchema);
 		await expectError(v, "", projSchema);
+	});
+
+	var wkt2Schema = {
+		"type": "string",
+		"subtype": "wkt2-definition"
+	};
+	test('wkt2-definition', async () => {
+		await expectSuccess(v, wkt2Value, wkt2Schema);
+		await expectSuccess(v, wkt2Value.toLowerCase(), wkt2Schema);
+		await expectError(v, wkt1Value, wkt2Schema);
+		await expectError(v, projValue, wkt2Schema);
+		await expectError(v, "EPSG:32632", wkt2Schema);
+		await expectError(v, "", wkt2Schema);
+	});
+
+
+	var pgSchema = {
+		"type": "object",
+		"subtype": "process-graph"
+	};
+	const ProcessGraphEVI = require('./assets/evi.json');
+	const invalidPg = {
+		process_graph: {
+			"123": {
+				process_id: "absolute",
+				arguments: {}
+			}
+		}
+	};
+	test('process-graph', async () => {
+		await expectSuccess(v, ProcessGraphEVI, pgSchema);
+		await expectError(v, invalidPg, pgSchema);
+		await expectError(v, {}, pgSchema);
 	});
 
 	var temporalIntervalSchema = {

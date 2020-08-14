@@ -25,7 +25,7 @@
     "assets/subtype-schemas.json"
   ],
   "dependencies": {
-    "@openeo/js-commons": "^1.1.0",
+    "@openeo/js-commons": "^1.1.1",
     "ajv": "^6.12.0"
   },
   "devDependencies": {
@@ -44,7 +44,7 @@
     "docs": "jsdoc src -r -d docs/ -P package.json -R README.md",
     "build": "npx webpack",
     "compat": "jshint src",
-    "test": "jest --testPathIgnorePatterns assets/ --env=jsdom",
-    "test_node": "jest --testPathIgnorePatterns assets/ --env=node"
+    "test": "jest --env=jsdom",
+    "test_node": "jest --env=node"
   }
 }

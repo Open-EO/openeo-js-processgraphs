@@ -5,6 +5,7 @@ const ProcessGraph = require('./processgraph');
 const ProcessGraphError = require('./error');
 const ProcessGraphNode = require('./node');
 const ProcessRegistry = require('./registry');
+const Utils = require('./utils');
 
 module.exports = {
 	BaseProcess,
@@ -13,5 +14,6 @@ module.exports = {
 	ProcessGraph,
 	ProcessGraphError,
 	ProcessGraphNode,
-	ProcessRegistry
+	ProcessRegistry,
+	Utils
 };
