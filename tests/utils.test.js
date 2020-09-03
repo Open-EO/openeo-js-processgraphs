@@ -71,9 +71,11 @@ describe('Utils Tests', () => {
 		compareRefs(Utils.getRefs(noRef), []);
 		compareRefs(Utils.getRefs(null), []);
 		compareRefs(Utils.getRefs("from_parameter"), []);
-		compareRefs(Utils.getRefs(pg, false), shallowRefs);
-		compareRefs(Utils.getRefs(pg, true), deepRefs);
-		compareRefs(Utils.getRefs(pg2, false), []);
+		compareRefs(Utils.getRefs(pg, true, false), shallowRefs);
+		compareRefs(Utils.getRefs(pg, true, true), deepRefs);
+		compareRefs(Utils.getRefs(pg2, true, false), []);
+		compareRefs(Utils.getRefs(pg, false, false), []);
+		compareRefs(Utils.getRefs(pg, false, true), []);
 	});
 
 	test('containsRef', () => {
@@ -83,10 +85,12 @@ describe('Utils Tests', () => {
 		expect(Utils.containsRef(noRef)).toEqual(false);
 		expect(Utils.containsRef(null)).toEqual(false);
 		expect(Utils.containsRef("from_parameter")).toEqual(false);
-		expect(Utils.containsRef(pg, false)).toEqual(true);
-		expect(Utils.containsRef(pg, true)).toEqual(true);
-		expect(Utils.containsRef(pg2, false)).toEqual(false);
-		expect(Utils.containsRef(pg2, true)).toEqual(true);
+		expect(Utils.containsRef(pg, true, false)).toEqual(true);
+		expect(Utils.containsRef(pg, true, true)).toEqual(true);
+		expect(Utils.containsRef(pg, false, false)).toEqual(false);
+		expect(Utils.containsRef(pg, false, true)).toEqual(false);
+		expect(Utils.containsRef(pg2, true, false)).toEqual(false);
+		expect(Utils.containsRef(pg2, true, true)).toEqual(true);
 	});
 
 });

@@ -21,16 +21,16 @@ class ProcessGraph {
 		this.resultNode = null;
 		this.children = [];
 		this.parentNode = null;
-		this.parentParameterName = null;
 		this.parsed = false;
 		this.validated = false;
 		this.errors = new ErrorList();
-		this.arguments = {};
+		this.callbackParameters = [];
 		// Sub process graphs need to copy these:
 		this.processRegistry = processRegistry;
 		this.jsonSchemaValidator = jsonSchemaValidator;
+		this.arguments = {};
 		this.allowEmptyGraph = false;
-		this.fillParameters = true;
+		this.fillProcessParameters = false;
 		this.allowUndefinedParameterRefs = true;
 	}
 
@@ -61,8 +61,21 @@ class ProcessGraph {
 
 	copyProcessGraphInstanceProperties(pg) {
 		pg.allowEmptyGraph = this.allowEmptyGraph;
-		pg.fillParameters = this.fillParameters;
+		pg.fillProcessParameters = this.fillProcessParameters;
 		pg.allowUndefinedParameterRefs = this.allowUndefinedParameterRefs;
+		return pg;
+	}
+
+	createChildProcessGraph(process, node, parameterPath = []) {
+		var pg = this.createProcessGraphInstance(process);
+		pg.setArguments(this.arguments);
+		pg.setParentNode(node);
+		if (parameterPath.length > 0) {
+			let parameterName = parameterPath.shift();
+			pg.setCallbackParameters(ProcessUtils.getCallbackParametersForProcess(pg.getParentProcess(), parameterName, parameterPath));
+		}
+		pg.parse();
+		this.children.push(pg);
 		return pg;
 	}
 
@@ -77,14 +90,13 @@ class ProcessGraph {
 		return null;
 	}
 
-	setParent(parent, parameterName) {
+	setParentNode(parent) {
 		if (parent instanceof ProcessGraphNode) {
 			this.parentNode = parent;
 		}
 		else {
 			this.parentNode = null;
 		}
-		this.parentParameterName = parameterName;
 	}
 
 	isValid() {
@@ -96,6 +108,9 @@ class ProcessGraph {
 	}
 
 	allowUndefinedParameters(allow = true) {
+		if (!allow) {
+			this.fillProcessParameters = false;
+		}
 		this.allowUndefinedParameterRefs = allow;
 	}
 
@@ -103,7 +118,7 @@ class ProcessGraph {
 		if (fill) {
 			this.allowUndefinedParameterRefs = true;
 		}
-		this.fillParameters = fill;
+		this.fillProcessParameters = fill;
 	}
 
 	allowEmpty(allow = true) {
@@ -198,11 +213,11 @@ class ProcessGraph {
 		return this.errors;
 	}
 
-	async execute(parameters = null) {
+	async execute(args = null) {
 		this.allowUndefinedParameters(false);
+		this.setArguments(args);
 		await this.validate();
 		this.reset();
-		this.setArguments(parameters);
 		await this.executeNodes(this.getStartNodes());
 		return this.getResultNode();
 	}
@@ -275,42 +290,57 @@ class ProcessGraph {
 		return await process.execute(node);
 	}
 
-	parseNodeArguments(nodeId, node, args) {
+	parseNodeArguments(nodeId, node, parameterPath = [], args = undefined) {
 		if (typeof args === 'undefined') {
 			args = node.arguments;
 		}
-		for(var argumentName in args) {
-			var arg = args[argumentName];
-			var type = Utils.getType(arg);
+		for(let argumentName in args) {
+			let arg = args[argumentName];
+			// Make a "path" that consists of the parameter name and the keys of arrays/objects, if applicable.
+			let path = parameterPath.concat([argumentName]);
+			let type = Utils.getType(arg);
 			switch(type) {
 				case 'result':
-					this.connectNodes(node, arg.from_node);
+					// Connect the nodes with each other
+					var prevNode = this.nodes[arg.from_node];
+					if (typeof prevNode === 'undefined') {
+						throw new ProcessGraphError('ReferencedNodeMissing', {node_id: arg.from_node});
+					}
+					node.addPreviousNode(prevNode);
+					prevNode.addNextNode(node);
 					break;
 				case 'callback':
-					args[argumentName] = this.createProcessGraph(arg, node, argumentName);
+					// Create a new process graph for the callback
+					args[argumentName] = this.createChildProcessGraph(arg, node, path);
 					break;
 				case 'parameter':
-					if (this.fillParameters && !this.hasParameter(arg.from_parameter) && !this.getCallbackParameter(arg.from_parameter)) {
-						this.addParameter(arg.from_parameter);
+					// If we found a parameter and it's not defined yet (includes that it's not a callback parameter) and fillProcessParameters is set to true: Add it to the process spec.
+					if (this.fillProcessParameters && !this.hasParameter(arg.from_parameter)) {
+						this.addProcessParameter(arg.from_parameter);
 					}
 					break;
 				case 'array':
 				case 'object':
-					this.parseNodeArguments(nodeId, node, arg);
+					// Parse everything hidden in arrays and objects
+					this.parseNodeArguments(nodeId, node, path, arg);
 					break;
 			}
 		}
 	}
 
-	createProcessGraph(process, node, argumentName) {
-		var pg = this.createProcessGraphInstance(process);
-		pg.setParent(node, argumentName);
-		pg.parse();
-		this.children.push(pg);
-		return pg;
+	setCallbackParameters(parameters) {
+		this.callbackParameters = parameters;
 	}
 
-	addParameter(name, description = '', schema = {}) {
+	getCallbackParameter(name) {
+		return this.getCallbackParameters().find(p => p.name === name) || null;
+	}
+
+	getCallbackParameters() {		
+		return this.callbackParameters;
+	}
+
+	addProcessParameter(name, description = '', schema = {}) {
 		if (!Array.isArray(this.process.parameters)) {
 			this.process.parameters = [];
 		}
@@ -335,17 +365,33 @@ class ProcessGraph {
 		return this.getParameter(name) !== null;
 	}
 
-	getParameters() {
+	getProcessParameters() {
 		return Array.isArray(this.process.parameters) ? this.process.parameters : [];
 	}
 
+	getProcessParameter(name) {
+		return this.getProcessParameters().find(p => p.name === name) || null;
+	}
+
 	getParameter(name) {
-		return this.getParameters().find(p => p.name === name) || null;
+		let callbackParam = this.getCallbackParameter(name);
+		let processParam = this.getProcessParameter(name);
+		if (callbackParam && processParam) {
+			// ToDo: Take https://github.com/Open-EO/openeo-api/issues/332 into account
+			return Object.assign({}, callbackParam, processParam);
+		}
+		else if (callbackParam) {
+			return callbackParam;
+		}
+		else if (processParam) {
+			return processParam;
+		}
+		return null;
 	}
 
 	setArguments(args) {
-		if (typeof args === 'object' && args !== null) {
-			this.arguments = args;
+		if (Utils.isObject(args)) {
+			Object.assign(this.arguments, args);
 		}
 	}
 
@@ -355,15 +401,6 @@ class ProcessGraph {
 
 	getArgument(name) {
 		return this.arguments[name];
-	}
-
-	connectNodes(node, prevNodeId) {
-		var prevNode = this.nodes[prevNodeId];
-		if (typeof prevNode === 'undefined') {
-			throw new ProcessGraphError('ReferencedNodeMissing', {node_id: prevNodeId});
-		}
-		node.addPreviousNode(prevNode);
-		prevNode.addNextNode(node);
 	}
 
 	reset() {
@@ -434,15 +471,6 @@ class ProcessGraph {
 			return null;
 		}
 		return this.processRegistry.get(this.getParentProcessId());
-	}
-
-	getCallbackParameter(name) {
-		let cbParams = this.getCallbackParameters();
-		return cbParams.find(p => p.name === name) || null;
-	}
-
-	getCallbackParameters() {		
-		return ProcessUtils.getCallbackParametersForProcess(this.getParentProcess(), this.parentParameterName);
 	}
 
 }

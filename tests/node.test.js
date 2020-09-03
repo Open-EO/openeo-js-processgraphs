@@ -66,7 +66,6 @@ describe('Node tests', () => {
 	var pg;
 	test('Parse', () => {
 		pg = new ProcessGraph(process);
-		pg.fillUndefinedParameters(false);
 		expect(() => pg.parse()).not.toThrow();
 		node = pg.getNode("example");
 	});
@@ -124,13 +123,6 @@ describe('Node tests', () => {
 		expect(node.getRawArgument("result")).toEqual(from_bar);
 		expect(node.getRawArgument("number")).toEqual(123);
 		expect(node.getRawArgument("data")).toBeUndefined();
-
-		expect(node.getRawArgumentValue("process")).toEqual(subProcess);
-		expect(node.getRawArgumentValue("context")).toEqual(contextObj);
-		expect(node.getRawArgumentValue("parameter")).toEqual(from_foo.from_parameter);
-		expect(node.getRawArgumentValue("result")).toEqual(from_bar.from_node);
-		expect(node.getRawArgumentValue("number")).toEqual(123);
-		expect(node.getRawArgumentValue("data")).toBeUndefined();
 	});
 
 	test('Refs', () => {

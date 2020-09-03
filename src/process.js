@@ -48,53 +48,71 @@ class BaseProcess {
 				}
 			}
 			let arg = node.getParsedArgument(param.name);
-			if (await this.validateArgument(arg, node, param.name, param)) {
-				continue;
-			}
-			throw new ProcessGraphError('ProcessArgumentInvalid', {
-				process: this.id,
-				argument: param.name,
-				reason: "Can't validate argument"
-			});
+			let rawArg = node.getRawArgument(param.name);
+			await this.validateArgument(arg, rawArg, node, param);
 		}
 	}
 
-	async validateArgument(arg, node, parameterName, param) {
+	async validateArgument(arg, rawArg, node, param, path = null) {
+		if (!path) {
+			path = param.name;
+		}
 		let argType = Utils.getType(arg);
+		let pg = node.getProcessGraph();
 		switch(argType) {
 			case 'parameter':
-				var cbParam = node.getProcessGraph().getCallbackParameter(arg.from_parameter);
-				if (cbParam) {
-					if (!JsonSchemaValidator.isSchemaCompatible(param.schema, cbParam)) {
+				// Validate callback parameters (no value available yet)
+				let callbackParam = pg.getCallbackParameter(arg.from_parameter);
+				if (callbackParam) {
+					if (!JsonSchemaValidator.isSchemaCompatible(param.schema, callbackParam.schema)) {
 						throw new ProcessGraphError('ProcessArgumentInvalid', {
 							process: this.id,
-							argument: parameterName,
+							argument: path,
+							reason: "Schema for parameter '" + arg.from_parameter + "' not compatible with reference"
+						});
+					}
+					return;
+				}
+
+				// Validate all other parameters (value must be available if allowUndefinedParameterRefs is false)
+				let value = node.getProcessGraphParameterValue(arg.from_parameter);
+				if (typeof value === 'undefined' && !pg.allowUndefinedParameterRefs) {
+					throw new ProcessGraphError('ProcessGraphParameterMissing', {
+						argument: arg.from_parameter,
+						node_id: node.id,
+						process_id: node.process_id
+					});
+				}
+
+				let parameter = pg.getProcessParameter(arg.from_parameter);
+				if (Utils.isObject(parameter) && parameter.schema) {
+					if (typeof value !== 'undefined') {
+						await this.validateArgument(value, rawArg, node, parameter, path);
+					}
+					if (!JsonSchemaValidator.isSchemaCompatible(param.schema, parameter.schema)) {
+						throw new ProcessGraphError('ProcessArgumentInvalid', {
+							process: this.id,
+							argument: path,
 							reason: "Schema for parameter '" + arg.from_parameter + "' not compatible"
 						});
 					}
-					else {
-						return true; // Parameter not available, nothing to validate against
-					}
 				}
-				else {
-					node.getProcessGraphParameter(arg.from_parameter);
-					return true;
-				} // jshint ignore:line
+				// else: Parameter not available, everything is valid
+				break;
 			case 'result':
-				var pg = node.getProcessGraph();
-				var resultNode = pg.getNode(arg.from_node);
-				var process = pg.getProcess(resultNode);
-				if (JsonSchemaValidator.isSchemaCompatible(param.schema, process.returns.schema)) {
-					return true;
+				let resultNode = pg.getNode(arg.from_node);
+				let process = pg.getProcess(resultNode);
+				if (!JsonSchemaValidator.isSchemaCompatible(param.schema, process.returns.schema)) {
+					throw new ProcessGraphError('ProcessArgumentInvalid', {
+						process: this.id,
+						argument: path,
+						reason: "Schema for result '" + arg.from_node + "' not compatible"
+					});
 				}
-				throw new ProcessGraphError('ProcessArgumentInvalid', {
-					process: this.id,
-					argument: parameterName,
-					reason: "Schema for result '" + arg.from_node + "' not compatible"
-				});
+				break;
 			case 'array':
 			case 'object':
-				if (!(arg instanceof ProcessGraph) && Utils.containsRef(arg)) {
+				if (Utils.containsRef(rawArg)) {
 					// This tries to at least be compliant to one of the element schemas
 					// It's better than validating nothing, but it's still not 100% correct
 					let schemas = ProcessUtils.normalizeJsonSchema(param.schema);
@@ -106,7 +124,7 @@ class BaseProcess {
 							for(let schema of elementSchema) {
 								try {
 									// ToDo: Check against JSON schema required property
-									await this.validateArgument(arg[key], node, parameterName + "." + key, {schema});
+									await this.validateArgument(arg[key], rawArg[key], node, {schema}, path + '/' + key);
 									validated++;
 								} catch (error) {
 									lastError = error;
@@ -117,7 +135,7 @@ class BaseProcess {
 							}
 						}
 					}
-					return true;
+					return;
 				}
 				else {
 					// Use default behavior below, so no break; needed
@@ -129,13 +147,11 @@ class BaseProcess {
 				if (errors.length > 0) {
 					throw new ProcessGraphError('ProcessArgumentInvalid', {
 						process: this.id,
-						argument: parameterName,
+						argument: path,
 						reason: errors
 					});
 				}
 		}
-
-		return true;
 	}
 
 	/* istanbul ignore next */

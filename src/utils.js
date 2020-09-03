@@ -10,25 +10,28 @@ class Utils extends CommonUtils {
 	/**
 	 * Checks whether a value contains references (from_parameter, from_node).
 	 * 
+	 * Doesn't return references from ProcessGraph objects if checkCallbacks is set to true.
+	 * 
 	 * @param {*} value 
-	 * @param {boolean} checkCallbacks - Set to `true` to also check for refs in callbacks.
+	 * @param {boolean} checkProcess - Set to `false` to not check for refs in a process if provided as value.
+	 * @param {boolean} checkCallbacks - Set to `true` to also check for refs in callbacks. Only applies if `checkProcess` is true.
 	 * @returns {boolean}
 	 */
-	static containsRef(value, checkCallbacks = false, depth = 0) {
+	static containsRef(value, checkProcess = true, checkCallbacks = false) {
 		let type = Utils.getType(value);
 		switch(type) {
 			case 'result':
 			case 'parameter':
 				return true;
 			case 'callback':
-				if ((depth === 0 || checkCallbacks) && Utils.containsRef(value.process_graph, checkCallbacks, depth+1)) {
+				if (checkProcess && Utils.containsRef(value.process_graph, checkCallbacks, checkCallbacks)) {
 					return true;
 				}
 				break;
 			case 'array':
 			case 'object':
 				for(let key in value) {
-					if (Utils.containsRef(value[key], checkCallbacks, depth)) {
+					if (Utils.containsRef(value[key], checkProcess, checkCallbacks)) {
 						return true;
 					}
 				}
@@ -39,11 +42,14 @@ class Utils extends CommonUtils {
 	/**
 	 * Returns all distinct references (from_parameter, from_node) contained in a value.
 	 * 
+	 * Doesn't return references from ProcessGraph objects if checkCallbacks is set to true.
+	 * 
 	 * @param {*} value 
-	 * @param {boolean} getFromCallbacks - Set to `true` to also include refs in callbacks.
+	 * @param {boolean} getFromProcess - Set to `false` to not get refs from a process if provided as value.
+	 * @param {boolean} getFromCallbacks - Set to `true` to also include refs in callbacks. Only applies if `getFromProcess` is true.
 	 * @returns {boolean}
 	 */
-	static getRefs(value, getFromCallbacks = false, depth = 0) {
+	static getRefs(value, getFromProcess = true, getFromCallbacks = false) {
 		var store = [];
 		var type = Utils.getType(value);
 		switch(type) {
@@ -52,14 +58,14 @@ class Utils extends CommonUtils {
 				store.push(value);
 				break;
 			case 'callback':
-				if (depth === 0 || getFromCallbacks) {
-					store = store.concat(Utils.getRefs(value.process_graph, getFromCallbacks, depth+1));
+				if (getFromProcess) {
+					store = store.concat(Utils.getRefs(value.process_graph, getFromCallbacks, getFromCallbacks));
 				}
 				break;
 			case 'array':
 			case 'object':
 				for(var key in value) {
-					store = store.concat(Utils.getRefs(value[key], getFromCallbacks , depth));
+					store = store.concat(Utils.getRefs(value[key], getFromProcess, getFromCallbacks));
 				}
 				break;
 		}

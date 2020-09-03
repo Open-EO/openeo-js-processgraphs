@@ -62,24 +62,11 @@ class ProcessGraphNode {
 	}
 
 	getArgumentType(name) {
-		return Utils.getType(this.arguments[name]);
+		return Utils.getType(this.getRawArgument(name));
 	}
 
 	getRawArgument(name) {
-		return Utils.isObject(this.source) && Utils.isObject(this.source.arguments) ? this.source.arguments[name] : undefined;
-	}
-
-	getRawArgumentValue(name) {
-		var arg = this.getRawArgument(name);
-		switch(Utils.getType(arg)) {
-			case 'result':
-				return arg.from_node;
-			case 'parameter':
-				return arg.from_parameter;
-			case 'callback':
-			default:
-				return arg;
-		}
+		return Utils.isObject(this.source.arguments) ? this.source.arguments[name] : undefined;
 	}
 
 	getParsedArgument(name) {
@@ -94,14 +81,14 @@ class ProcessGraphNode {
 	}
 
 	getArgumentRefs(name) {
-		return Utils.getRefs(this.arguments[name], false);
+		return Utils.getRefs(this.getRawArgument(name), false);
 	}
 
 	getRefs() {
-		return Utils.getRefs(this.arguments, false);
+		return Utils.getRefs(this.source.arguments, false);
 	}
 
-	getProcessGraphParameter(name) {
+	getProcessGraphParameterValue(name) {
 		// 1. Check local parameter, then check parents
 		// 2. Check parents
 		// 3. Try to get default value
@@ -121,8 +108,8 @@ class ProcessGraphNode {
 		if (typeof defaultValue !== 'undefined') {
 			return defaultValue;
 		}
-		
-		if (!this.processGraph.allowUndefinedParameterRefs && !this.processGraph.getCallbackParameter(name)) {
+
+		if (!this.processGraph.allowUndefinedParameterRefs) {
 			throw new ProcessGraphError('ProcessGraphParameterMissing', {
 				argument: name,
 				node_id: this.id,
@@ -139,7 +126,7 @@ class ProcessGraphNode {
 			case 'callback':
 				return arg;
 			case 'parameter':
-				return this.getProcessGraphParameter(arg.from_parameter);
+				return this.getProcessGraphParameterValue(arg.from_parameter);
 			case 'array':
 			case 'object':
 				let copy = type === 'array' ? [] : {};

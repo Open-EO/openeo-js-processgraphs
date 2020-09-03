@@ -3,6 +3,7 @@ const PROCESSES = require('./assets/processes.json');
 const ProcessGraph = require('../src/processgraph');
 const ProcessRegistry = require('../src/registry');
 const BaseProcess = require('../src/process');
+const Utils = require('../src/utils');
 
 process.on('unhandledRejection', r => console.log(r));
 
@@ -46,7 +47,7 @@ class LoadImpl extends ProcessImpl {
 
 		// Execute properties callbacks
 		let filters = node.getArgument("properties");
-		if (Array.isArray(filters)) {
+		if (Utils.isObject(filters)) {
 			for(var key in filters) {
 				await filters[key].execute({value: 123});
 			}
@@ -253,7 +254,7 @@ describe('Process Graph Tests', () => {
 		await validateFailsWith(pg, "Process 'foo' is not supported.");
 	});
 
-/*	const ProcessGraphLoadCol = require('./assets/load_collection_properties.json');
+	const ProcessGraphLoadCol = require('./assets/load_collection_properties.json');
 	test('Executor > execute load_collection properties', async () => {
 		var pg = new ProcessGraph(ProcessGraphLoadCol, registry);
 		q.clear();
@@ -261,13 +262,26 @@ describe('Process Graph Tests', () => {
 		expect(pg.isValid()).toBe(true);
 		expect(pg.getErrors().count()).toEqual(0);
 		expect(resultNode.getResult()).toEqual(resultNode.id);
-		expect(q.all()).toEqual(["load_collection", "cc", "pf"]);
-	}); */
+		expect(q.all()).toEqual(["loadco1", "cc", "pf"]);
+	});
+
+	test('Executor > fail if no arguments for execute have been set', async () => {
+		var pg = new ProcessGraph(ProcessGraphEVI, registry);
+		q.clear();
+		try {
+			let result = await pg.execute();
+			expect(result).toBeUndefined();
+		} catch (error) {
+			expect(error.message).toContain("Invalid parameter 'collection-id' requested in the process 'load_collection'");
+		}
+	});
 
 	test('Executor > execute EVI with registry', async () => {
 		var pg = new ProcessGraph(ProcessGraphEVI, registry);
 		q.clear();
-		var resultNode = await pg.execute();
+		var resultNode = await pg.execute({
+			"collection-id": "S2"
+		});
 		expect(pg.isValid()).toBe(true);
 		expect(pg.getErrors().count()).toEqual(0);
 		expect(resultNode.getResult()).toEqual(resultNode.id);
