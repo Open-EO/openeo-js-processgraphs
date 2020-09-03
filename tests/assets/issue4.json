@@ -1,0 +1,26 @@
+{
+	"process_graph": {
+		"test": {
+			"process_id": "reduce_dimension",
+			"arguments": {
+				"data": {
+					"from_parameter": "data"
+				},
+				"reducer": {
+						"min_UJGQT5705P": {
+							"process_id": "min",
+							"arguments": {
+								"data": {
+									"from_parameter": "data"
+								}
+							},
+							"result": true
+						}
+				},
+				"dimension": "temporal",
+				"context": null
+			},
+			"result": true
+		}
+	}
+}

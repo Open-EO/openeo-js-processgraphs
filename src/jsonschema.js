@@ -5,7 +5,6 @@ const keywords = require('./keywords');
 
 var geoJsonSchema = require("../assets/GeoJSON.json");
 var subtypeSchemas = require("../assets/subtype-schemas.json");
-const ProcessGraph = require('./processgraph');
 
 /**
  * JSON Schema Validator.

@@ -153,6 +153,11 @@ describe('Process Graph Tests', () => {
 		expect(pg.getStartNodeIds()).toEqual(["dc"]);
 	});
 
+	const issue4 = require('./assets/issue4.json');
+	test('Validator > complain if callback is not a process', async () => {
+		await validateFailsWith(issue4, "The argument 'reducer' in process 'reduce_dimension' is invalid: No process graph specified");
+	});
+
 	test('Validator > validate EVI with registry', async () => {
 		var pg = new ProcessGraph(ProcessGraphEVI, registry);
 		var errors = await pg.validate(false);

@@ -1,6 +1,5 @@
 const JsonSchemaValidator = require('./jsonschema');
 const ProcessGraphError = require('./error');
-const ProcessGraph = require('./processgraph');
 const ProcessUtils = require('@openeo/js-commons/src/processUtils');
 const Utils = require('./utils');
 
@@ -112,10 +111,12 @@ class BaseProcess {
 				break;
 			case 'array':
 			case 'object':
-				if (Utils.containsRef(rawArg)) {
+				let schemas = ProcessUtils.normalizeJsonSchema(param.schema).filter(schema => ['array', 'object'].includes(schema.type));
+				// Check if it is expected to be a process. If yes, do normal validation. Handles the issue discussed in https://github.com/Open-EO/openeo-js-processgraphs/issues/4
+				let isProcessGraphSchema = (schemas.length === 1 && schemas[0].subtype === 'process-graph');
+				if (Utils.containsRef(rawArg) && !isProcessGraphSchema) {
 					// This tries to at least be compliant to one of the element schemas
 					// It's better than validating nothing, but it's still not 100% correct
-					let schemas = ProcessUtils.normalizeJsonSchema(param.schema);
 					for(var key in arg) {
 						let elementSchema = schemas.map(schema =>  ProcessUtils.getElementJsonSchema(schema, key)).filter(schema => Object.keys(schema).length); // jshint ignore:line
 						if (elementSchema.length > 0) {
