@@ -23,7 +23,7 @@ You can then require the parts of the library you want to use. For example: `con
 In a web environment you can include the library as follows:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/ajv@6.12/lib/ajv.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ajv@6.12/dist/ajv.bundle.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@openeo/js-processgraphs@1.0.0-beta.4/dist/main.min.js"></script>
 ```
 
