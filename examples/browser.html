@@ -1,0 +1,34 @@
+<html>
+<head>
+	<title>openeo-js-processgraphs example</title>
+	<!--<script src="https://cdn.jsdelivr.net/npm/ajv@6.12/lib/ajv.min.js"></script>-->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/ajv/6.12.5/ajv.bundle.js"></script>
+	<script src="file:///home/christoph/dev/openeo-js-processgraphs/dist/main.js"></script>
+	<!--<script src="https://cdn.jsdelivr.net/npm/@openeo/js-processgraphs@1.0.0-beta.4/dist/main.min.js"></script>-->
+	
+	<script>
+		function parse() {  
+			const processes = JSON.parse(document.getElementById('processes').value).processes;
+			const processAsString = document.getElementById('pg').value;
+			const processAsObject = JSON.parse(processAsString);
+			const processRegistry = new ProcessRegistry(processes);
+			var pg = new ProcessGraph(processAsObject, processRegistry);
+			pg.parse();
+			console.log(pg);
+		}
+	</script>
+	
+	<style>
+		textarea {
+			width: 600px;
+			height: 200px;
+			display: block;
+		}
+	</style>
+</head>
+<body>
+	<textarea id='processes' placeholder="Paste /processes response here"></textarea>
+	<textarea id='pg' placeholder="Paste your process graph here"></textarea>
+	<button onclick="parse()">Parse</button>
+</body>
+</html>
