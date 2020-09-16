@@ -1,5 +1,6 @@
 <html>
 <head>
+	<meta charset="utf-8" />
 	<title>openeo-js-processgraphs example</title>
 	<!--<script src="https://cdn.jsdelivr.net/npm/ajv@6.12/lib/ajv.min.js"></script>-->
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/ajv/6.12.5/ajv.bundle.js"></script>
@@ -20,15 +21,30 @@
 	
 	<style>
 		textarea {
-			width: 600px;
+			width: 90%;
 			height: 200px;
 			display: block;
+		}
+		p {
+			margin-top: 0;
+			margin-bottom: 2em;
+		}
+		button {
+			font-weight: bold;
+			height: 3em;
+			width: 10em;
 		}
 	</style>
 </head>
 <body>
+	<h1>openeo-js-processgraphs example</h1>
+
 	<textarea id='processes' placeholder="Paste /processes response here"></textarea>
+	<p>e.g. <a href="https://earthengine.openeo.org/v1.0/processes" target="_blank">https://earthengine.openeo.org/v1.0/processes</a></p>
+
 	<textarea id='pg' placeholder="Paste your process graph here"></textarea>
+	<p>e.g. <a href="https://raw.githubusercontent.com/Open-EO/openeo-earthengine-driver/0f5f094de2a3802d85d47b79862c127b862a9c56/tests/data/sample-processgraph.json" target="_blank">the Earth Engine driver sample process graph</a></p>
+
 	<button onclick="parse()">Parse</button>
 </body>
 </html>
