@@ -8,12 +8,11 @@
 	<!--<script src="https://cdn.jsdelivr.net/npm/@openeo/js-processgraphs@1.0.0-beta.4/dist/main.min.js"></script>-->
 	
 	<script>
-		async function parse() {  
+		async function validate() {
 			const processes = JSON.parse(document.getElementById('processes').value).processes;
-			const processAsString = document.getElementById('pg').value;
-			const processAsObject = JSON.parse(processAsString);
+			const processGraph = JSON.parse(document.getElementById('pg').value);
 			const processRegistry = new ProcessRegistry(processes);
-			var pg = new ProcessGraph(processAsObject, processRegistry);
+			var pg = new ProcessGraph(processGraph, processRegistry);
 			console.log(pg);
 
 			const errors = await pg.validate(false);
@@ -31,7 +30,7 @@
 			// document.getElementById('errors').innerHTML = errors.getMessage();
 		}
 	</script>
-	
+
 	<style>
 		textarea {
 			width: 90%;
@@ -65,7 +64,7 @@
 	<textarea id='pg' placeholder="Paste your process graph here"></textarea>
 	<p>e.g. <a href="https://raw.githubusercontent.com/Open-EO/openeo-earthengine-driver/0f5f094de2a3802d85d47b79862c127b862a9c56/tests/data/sample-processgraph.json" target="_blank">the Earth Engine driver sample process graph</a></p>
 
-	<button onclick="parse()">Parse</button>
+	<button onclick="validate()">Validate</button>
 
 	<output id="errors"></output>
 </body>
