@@ -1,4 +1,4 @@
-const ajv = require('ajv');
+const Ajv = require('ajv');
 const Utils = require('./utils');
 const ProcessUtils = require('@openeo/js-commons/src/processUtils.js');
 const keywords = require('./keywords');
@@ -14,7 +14,7 @@ var subtypeSchemas = require("../assets/subtype-schemas.json");
 class JsonSchemaValidator {
 
 	constructor() {
-		this.ajv = new ajv({
+		this.ajv = new Ajv({
 			schemaId: 'auto',
 			format: 'full',
 			addUsedSchema: false
@@ -149,14 +149,14 @@ class JsonSchemaValidator {
 			return true;
 		}
 
-		throw new ajv.ValidationError([{
+		throw new Ajv.ValidationError([{
 			message: "Invalid EPSG code '" + data + "' specified."
 		}]);
 	}
 	
 	async validateInputFormat(data) {
 		if (Utils.isObject(this.fileFormats.input) && !(data.toUpperCase() in this.fileFormats.input)) {
-			throw new ajv.ValidationError([{
+			throw new Ajv.ValidationError([{
 				message: "Input format  '" + data + "' not supported."
 			}]);
 		}
@@ -165,7 +165,7 @@ class JsonSchemaValidator {
 	
 	async validateOutputFormat(data) {
 		if (Utils.isObject(this.fileFormats.output) && !(data.toUpperCase() in this.fileFormats.output)) {
-			throw new ajv.ValidationError([{
+			throw new Ajv.ValidationError([{
 				message: "Output format  '" + data + "' not supported."
 			}]);
 		}
@@ -175,7 +175,7 @@ class JsonSchemaValidator {
 	async validateProjDefinition(data) {
 		// To be overridden by end-user application, just doing a very basic check here.
 		if (!data.toLowerCase().includes("+proj")) {
-			throw new ajv.ValidationError([{
+			throw new Ajv.ValidationError([{
 				message: "Invalid PROJ string specified (doesn't contain '+proj')."
 			}]);
 		}
@@ -197,7 +197,7 @@ class JsonSchemaValidator {
 		];
 		data = data.toUpperCase();
 		if (!codeWords.some(word => data.indexOf(word) !== -1)) {
-			throw new ajv.ValidationError([{
+			throw new Ajv.ValidationError([{
 				message: "Invalid WKT2 string specified."
 			}]);
 		}
@@ -206,7 +206,7 @@ class JsonSchemaValidator {
 
 	async validateTemporalInterval(data) {
 		if (data[0] === null && data[1] === null) {
-			throw new ajv.ValidationError([{
+			throw new Ajv.ValidationError([{
 				message: "Temporal interval must not be open on both ends."
 			}]);
 		}
@@ -214,7 +214,7 @@ class JsonSchemaValidator {
 			let date1 = new Date(data[0]);
 			let date2 = new Date(data[1]);
 			if (date2.getTime() < date1.getTime()) {
-				throw new ajv.ValidationError([{
+				throw new Ajv.ValidationError([{
 					message: "The second timestamp can't be before the first timestamp."
 				}]);
 			}
@@ -250,7 +250,7 @@ class JsonSchemaValidator {
 			await parser.validate();
 			return true;
 		} catch (error) {
-			throw new ajv.ValidationError([{
+			throw new Ajv.ValidationError([{
 				message: error.message
 			}]);
 		}

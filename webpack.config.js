@@ -10,7 +10,7 @@ module.exports = {
     libraryTarget: 'umd'
   },
   externals: {
-    ajv: 'ajv'
+    ajv: 'Ajv'
   },
   plugins: [
     new UnminifiedWebpackPlugin(),
