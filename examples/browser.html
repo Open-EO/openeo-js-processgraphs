@@ -8,14 +8,27 @@
 	<!--<script src="https://cdn.jsdelivr.net/npm/@openeo/js-processgraphs@1.0.0-beta.4/dist/main.min.js"></script>-->
 	
 	<script>
-		function parse() {  
+		async function parse() {  
 			const processes = JSON.parse(document.getElementById('processes').value).processes;
 			const processAsString = document.getElementById('pg').value;
 			const processAsObject = JSON.parse(processAsString);
 			const processRegistry = new ProcessRegistry(processes);
 			var pg = new ProcessGraph(processAsObject, processRegistry);
-			pg.parse();
 			console.log(pg);
+
+			const errors = await pg.validate(false);
+			console.log(errors);
+
+			var asHtml;
+			if(errors.count() == 0) {
+				asHtml = '<strong>No errors found :)</strong>';
+			} else {
+				asHtml = '<ol><li>' + errors.getAll().map(e => `<strong>${e.code}:</strong> ${e.message}`).join("</li><li>") + '</ol></li>';
+			}
+			document.getElementById('errors').innerHTML = asHtml;
+
+			// If we wouldn't need HTML, the getMessage function could be used instead:
+			// document.getElementById('errors').innerHTML = errors.getMessage();
 		}
 	</script>
 	
@@ -34,6 +47,13 @@
 			height: 3em;
 			width: 10em;
 		}
+		output {
+			display: block;
+			margin-top: 1em;
+			padding: 1em;
+			border: 1px solid #333;
+			background-color: #ddd;
+		}
 	</style>
 </head>
 <body>
@@ -46,5 +66,7 @@
 	<p>e.g. <a href="https://raw.githubusercontent.com/Open-EO/openeo-earthengine-driver/0f5f094de2a3802d85d47b79862c127b862a9c56/tests/data/sample-processgraph.json" target="_blank">the Earth Engine driver sample process graph</a></p>
 
 	<button onclick="parse()">Parse</button>
+
+	<output id="errors"></output>
 </body>
 </html>
