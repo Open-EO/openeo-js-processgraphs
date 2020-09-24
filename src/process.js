@@ -15,6 +15,13 @@ class BaseProcess {
 
 		// Make properties easily accessible 
 		Object.assign(this, spec);
+
+		if (typeof this.id !== 'string') {
+			throw new Error("Invalid process specified, no id given.");
+		}
+		if (!Array.isArray(this.parameters)) {
+			this.parameters = [];
+		}
 	}
 
 	toJSON() {
