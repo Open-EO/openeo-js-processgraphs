@@ -207,6 +207,75 @@ describe('JSON Schema Validator Tests', () => {
 		await expectError(v, "", inputFormatSchema);
 	});
 
+	var collectionSchema = {
+		"type": "string",
+		"subtype": "collection-id"
+	};
+	test('collection-id', async () => {
+		// No collections set => succeed always
+		await expectSuccess(v, "S1", collectionSchema);
+		// Invalid collections set => succeed always
+		v.setCollections("invalid");
+		await expectSuccess(v, "S1", collectionSchema);
+		// Proper usage...
+		v.setCollections(["S2", "S1"]);
+		await expectSuccess(v, "S2", collectionSchema);
+		await expectSuccess(v, "S1", collectionSchema);
+		await expectError(v, "S3", collectionSchema);
+		v.setCollections([{id: "S2"}, {id: "S1"}]);
+		await expectSuccess(v, "S2", collectionSchema);
+		await expectSuccess(v, "S1", collectionSchema);
+		await expectError(v, "S3", collectionSchema);
+	});
+
+	var runtimeSchema = {
+		"type": "string",
+		"subtype": "udf-runtime"
+	};
+	var udfRuntimes = {
+		"R": {
+			"title": "R v3.x for Statistical Computing",
+			"description": "R programming language with `Rcpp` and `rmarkdown` extensions installed.",
+			"type": "language",
+			"default": "3.5.2",
+			"versions": {
+				"3.1.0": {
+					"libraries": {
+						"Rcpp": {
+							"version": "1.0.10",
+							"links": [
+								{
+									"href": "https://cran.r-project.org/web/packages/Rcpp/index.html",
+									"rel": "about"
+								}
+							]
+						},
+						"rmarkdown": {
+							"version": "1.7.0",
+							"links": [
+								{
+									"href": "https://cran.r-project.org/web/packages/rmarkdown/index.html",
+									"rel": "about"
+								}
+							]
+						}
+					}
+				}
+			}
+		}
+	};
+	test('udf-runtime', async () => {
+		// No collections set => succeed always
+		await expectSuccess(v, "R", runtimeSchema);
+		// Invalid collections set => succeed always
+		v.setUdfRuntimes("invalid");
+		await expectSuccess(v, "R", runtimeSchema);
+		// Proper usage...
+		v.setUdfRuntimes(udfRuntimes);
+		await expectSuccess(v, "R", runtimeSchema);
+		await expectError(v, "Python", runtimeSchema);
+	});
+
 	var wkt2Value = 'GEOGCRS["WGS 84",DATUM["World Geodetic System 1984",ELLIPSOID["WGS 84",6378137,298.257223563,LENGTHUNIT["metre",1]]],PRIMEM["Greenwich",0,ANGLEUNIT["degree",0.0174532925199433]],CS[ellipsoidal,2],AXIS["geodetic latitude (Lat)",north,ORDER[1],ANGLEUNIT["degree",0.0174532925199433]],AXIS["geodetic longitude (Lon)",east,ORDER[2],ANGLEUNIT["degree",0.0174532925199433]],ID["EPSG",4326]]';
 	var wkt1Value = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AXIS["Latitude",NORTH],AXIS["Longitude",EAST],AUTHORITY["EPSG","4326"]]';
 	var projValue = "+proj=moll +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs";

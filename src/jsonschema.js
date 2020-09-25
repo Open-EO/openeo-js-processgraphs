@@ -32,12 +32,14 @@ class JsonSchemaValidator {
 			errors: true
 		}));
 
+		this.collections = null;
+		this.epsgCodes = null;
 		this.fileFormats = {
 			input: null,
 			output: null
 		};
-		this.epsgCodes = null;
 		this.processRegistry = null;
+		this.udfRuntimes = null;
 	}
 
 	getFunctionName(subtype) {
@@ -116,6 +118,28 @@ class JsonSchemaValidator {
 		}
 	}
 
+	setUdfRuntimes(udfRuntimes) {
+		if (!Utils.isObject(udfRuntimes)) {
+			return;
+		}
+		this.udfRuntimes = udfRuntimes;
+	}
+
+	setCollections(collections) {
+		if (!Array.isArray(collections)) {
+			return;
+		}
+		this.collections = [];
+		for(let c of collections) {
+			if (Utils.isObject(c) && typeof c.id === 'string') {
+				this.collections.push(c.id);
+			}
+			else if (typeof c === 'string') {
+				this.collections.push(c);
+			}
+		}
+	}
+
 	// Expects API compatible file formats (see GET /file_formats).
 	setFileFormats(fileFormats) {
 		if (!Utils.isObject(fileFormats)) {
@@ -136,6 +160,24 @@ class JsonSchemaValidator {
 		if (Array.isArray(epsgCodes)) {
 			this.epsgCodes = epsgCodes.map(v => parseInt(v, 10));
 		}
+	}
+
+	async validateCollectionId(data) {
+		if (Array.isArray(this.collections) && !this.collections.find(c => c === data)) {
+			throw new Ajv.ValidationError([{
+				message: "Collection with id '" + data + "' doesn't exist."
+			}]);
+		}
+		return true;
+	}
+
+	async validateUdfRuntime(data) {
+		if (Utils.isObject(this.udfRuntimes) && !(data in this.udfRuntimes)) {
+			throw new Ajv.ValidationError([{
+				message: "UDF runtime '" + data + "' is not supported."
+			}]);
+		}
+		return true;
 	}
 
 	async validateEpsgCode(data) {
