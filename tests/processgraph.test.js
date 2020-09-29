@@ -78,6 +78,12 @@ describe('Process Graph Tests', () => {
 		expect(() => pg.parse()).not.toThrow();
 	});
 
+	test('Parser > Fail on non-empty invalid processes', async () => {
+		var pg = new ProcessGraph({"1": {process_id: "foo", arguments: {}}}, registry);
+		pg.allowEmpty();
+		expect(() => pg.parse()).toThrow();
+	});
+
 	test('Parser > Invalid process graph throws', async () => {
 		var pg = new ProcessGraph({process_graph: null}, registry);
 		expect(() => pg.parse()).toThrow();

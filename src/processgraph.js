@@ -150,7 +150,7 @@ class ProcessGraph {
 		}
 
 		if (Utils.size(this.process.process_graph) === 0) {
-			if (this.allowEmptyGraph) {
+			if (this.allowEmptyGraph && Utils.size(this.process) === 0) {
 				this.parsed = true;
 				return;
 			}
