@@ -1,5 +1,7 @@
 name: JS Process Graphs Documentation
-on: [release]
+on:
+  release:
+    types: [published]
 jobs:
   deploy:
     runs-on: ubuntu-latest
