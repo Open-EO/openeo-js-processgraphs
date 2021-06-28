@@ -1,10 +1,7 @@
-const subtypeSchemas = require("../assets/subtype-schemas.json");
-
 module.exports = {
 	subtype: {
 		metaSchema: {
-			type: "string",
-			enum: Object.keys(subtypeSchemas.definitions)
+			type: "string"
 		}
 	},
 	parameters: {
@@ -56,6 +53,35 @@ module.exports = {
 							}
 						]
 					}
+				}
+			}
+		}
+	},
+	returns: {
+		dependencies: [
+			"subtype"
+		],
+		metaSchema: {
+			type: "object",
+			required: [
+				"schema"
+			],
+			properties: {
+				description: {
+					type: "string"
+				},
+				schema: {
+					oneOf: [
+						{
+							"$ref": "http://json-schema.org/draft-07/schema"
+						},
+						{
+							type: "array",
+							items: {
+								"$ref": "http://json-schema.org/draft-07/schema"
+							}
+						}
+					]
 				}
 			}
 		}

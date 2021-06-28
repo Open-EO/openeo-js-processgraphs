@@ -26,6 +26,10 @@ class JsonSchemaValidator {
 			valid: true,
 			errors: true
 		}));
+		this.ajv.addKeyword('returns', Object.assign(keywords.returns, {
+			valid: true,
+			errors: true
+		}));
 		this.ajv.addKeyword('subtype', Object.assign(keywords.subtype, {
 			validate: async (subtype, data, schema) => await this.validateSubtype(subtype, data, schema),
 			async: true,
