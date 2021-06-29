@@ -306,6 +306,31 @@ describe('JSON Schema Validator Tests', () => {
 		await expectError(v, "", wkt2Schema);
 	});
 
+	// Web Editor references
+	var refFromNodeSchema = {
+		type: 'object',
+		group: 'References',
+		subtype: 'from_node:1',
+		isRef: 'from_node',
+		from_node: '1',
+		title: 'Output of #1',
+		required: ["from_node"],
+		properties: {
+			from_node: {
+				type: "string",
+				const: "1"
+			}
+		},
+		additionalProperties: false
+	};
+	test('ref-from_node', async () => {
+		await expectSuccess(v, {from_node: "1"}, refFromNodeSchema);
+		await expectError(v, {from_node: "1", foo: "bar"}, refFromNodeSchema);
+		await expectError(v, {from_node: 1}, refFromNodeSchema);
+		await expectError(v, {}, refFromNodeSchema);
+		await expectError(v, "", refFromNodeSchema);
+	});
+
 
 	var pgSchema = {
 		"type": "object",

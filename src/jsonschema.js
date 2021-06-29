@@ -99,9 +99,7 @@ class JsonSchemaValidator {
 		if (typeof subtypeSchemas.definitions[subtype] !== 'undefined') {
 			schema = this.makeSchema(subtypeSchemas, true);
 			// Make the schema for this subtype the default schema to be checked
-			Object.assign(schema, subtypeSchemas.definitions[subtype]);
-			// Remove subtype to avoid recursion
-			delete schema.subtype;
+			schema = Object.assign({}, subtypeSchemas.definitions[subtype], schema);
 			if (subtype === 'process-graph') {
 				// Special case: all validation will be done in validateProcessGraph()
 				delete schema.required;
@@ -111,6 +109,9 @@ class JsonSchemaValidator {
 		else {
 			schema = this.makeSchema(schema, true);
 		}
+
+		// Remove subtype to avoid recursion
+		delete schema.subtype;
 
 		let validated = await this.ajv.validate(schema, data);
 		let funcName = this.getFunctionName(subtype);
