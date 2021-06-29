@@ -43,7 +43,7 @@
   "scripts": {
     "docs": "jsdoc src -r -d docs/ -P package.json -R README.md",
     "build": "npx webpack",
-    "compat": "jshint src",
+    "lint": "jshint src",
     "test": "jest --env=jsdom",
     "test_node": "jest --env=node"
   }

@@ -10,7 +10,7 @@ jobs:
       - uses: actions/setup-node@v1
       - uses: actions/checkout@v2
       - run: npm install
-      - run: npm run compat
+      - run: npm run lint
       - run: npm run build
       - run: npm run docs
       - run: npm run test
