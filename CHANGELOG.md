@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Better support for unkown subtypes
+- Better support for unknown subtypes
 - Implement full support of openEO API v1.1.0
 
 ### Fixed
