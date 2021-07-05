@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2021-07-05
+
+### Added
+
+- `ProcessGraph.getProcessParameter(s)` can return undefined parameters if the `includeUndefined` parameter is set to `true`
+
 ## [1.1.0] - 2021-06-29
 
 ### Added
@@ -25,6 +31,7 @@ First stable release supporting openEO API 1.0.0.
 
 All prior releases have been documented in the [GitHub Releases](https://github.com/Open-EO/openeo-js-processgraphs/releases).
 
-[Unreleased]: <https://github.com/Open-EO/openeo-js-processgraphs/compare/v1.1.0...HEAD>
+[Unreleased]: <https://github.com/Open-EO/openeo-js-processgraphs/compare/v1.2.0...HEAD>
+[1.2.0]: <https://github.com/Open-EO/openeo-js-processgraphs/compare/v1.1.0...v1.2.0>
 [1.1.0]: <https://github.com/Open-EO/openeo-js-processgraphs/compare/v1.0.0...v1.1.0>
 [1.0.0]: <https://github.com/Open-EO/openeo-js-processgraphs/compare/v1.0.0>

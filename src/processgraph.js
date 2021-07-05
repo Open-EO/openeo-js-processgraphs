@@ -365,12 +365,27 @@ class ProcessGraph {
 		return this.getParameter(name) !== null;
 	}
 
-	getProcessParameters() {
-		return Array.isArray(this.process.parameters) ? this.process.parameters : [];
+	getProcessParameters(includeUndefined = false) {
+		let parameters = Array.isArray(this.process.parameters) ? this.process.parameters.slice(0) : [];
+		if (includeUndefined && !this.fillProcessParameters) {
+			for (let key in this.nodes) {
+				let refs = this.nodes[key].getRefs();
+				for(let ref of refs) {
+					if (ref.from_parameter && !parameters.find(other => other.name === ref.from_parameter)) { // jshint ignore:line
+						parameters.push({
+							name: ref.from_parameter,
+							description: '',
+							schema: {}
+						});
+					}
+				}
+			}
+		}
+		return parameters;
 	}
 
-	getProcessParameter(name) {
-		return this.getProcessParameters().find(p => p.name === name) || null;
+	getProcessParameter(name, includeUndefined = false) {
+		return this.getProcessParameters(includeUndefined).find(p => p.name === name) || null;
 	}
 
 	getParameter(name) {

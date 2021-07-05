@@ -1,13 +1,20 @@
 {
 	"process_graph":{
 		"dc":{
-			"process_id":"load_collection",
+			"process_id": "load_collection",
 			"arguments":{
-				"id":{"from_parameter": "cid"},
-				"spatial_extent":null,
-				"temporal_extent":null
+				"id": {"from_parameter": "cid"},
+				"spatial_extent": null,
+				"temporal_extent": null
 			},
 			"result": true
+		},
+		"debug": {
+			"process_id": "debug",
+			"arguments":{
+				"message": "Collection ID",
+				"data": {"from_parameter": "cid"}
+			}
 		}
 	}
 }

@@ -194,7 +194,18 @@ describe('Process Graph Tests', () => {
 	test('Validator > allow undefined param', async () => {
 		var pg = new ProcessGraph(ProcessGraphUndefinedParam, registry);
 		pg.allowUndefinedParameters();
+
 		await validateSucceeds(pg);
+
+		let cid = {
+			name: 'cid',
+			description: '',
+			schema: {}
+		};
+		expect(pg.getProcessParameters()).toEqual([]);
+		expect(pg.getProcessParameters(true)).toEqual([cid]);
+		expect(pg.getProcessParameter('cid')).toBeNull();
+		expect(pg.getProcessParameter('cid', true)).toEqual(cid);
 	});
 	test('Validator > Fill parameters for undefined parameter refs', async () => {
 		var pg = new ProcessGraph(ProcessGraphUndefinedParam, registry);
