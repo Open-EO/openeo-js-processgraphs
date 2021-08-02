@@ -72,13 +72,13 @@ describe('Process Graph Tests', () => {
 		expect(() => pg.parse()).toThrow();
 	});
 
-	test('Parser > Empty process allowed', async () => {
+	test('Parser > allowEmpty > Empty process allowed', async () => {
 		var pg = new ProcessGraph({}, registry);
 		pg.allowEmpty();
 		expect(() => pg.parse()).not.toThrow();
 	});
 
-	test('Parser > Fail on non-empty invalid processes', async () => {
+	test('Parser > allowEmpty > Fail on non-empty invalid processes', async () => {
 		var pg = new ProcessGraph({"1": {process_id: "foo", arguments: {}}}, registry);
 		pg.allowEmpty();
 		expect(() => pg.parse()).toThrow();
@@ -92,6 +92,12 @@ describe('Process Graph Tests', () => {
 	test('Parser > Empty process graph throws', async () => {
 		var pg = new ProcessGraph({process_graph: {}}, registry);
 		expect(() => pg.parse()).toThrow();
+	});
+
+	test('Parser > allowEmpty > Empty process graph does not throw', async () => {
+		var pg = new ProcessGraph({process_graph: {}}, registry);
+		pg.allowEmpty();
+		expect(() => pg.parse()).not.toThrow();
 	});
 
 	test('Parser > Multiple result nodes throw', async () => {

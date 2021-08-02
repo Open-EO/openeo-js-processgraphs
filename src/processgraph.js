@@ -5,6 +5,21 @@ const ProcessGraphNode = require('./node');
 const Utils = require('./utils');
 const ProcessUtils = require('@openeo/js-commons/src/processUtils.js');
 
+const processKeys = [
+	'id',
+	'summary',
+	'description',
+	'categories',
+	'parameters',
+	'returns',
+	'deprecated',
+	'experimental',
+	'exceptions',
+	'examples',
+	'links',
+	'process_graph'
+];
+
 /**
  * Process parser, validator and executor.
  * 
@@ -150,13 +165,14 @@ class ProcessGraph {
 		}
 
 		if (Utils.size(this.process.process_graph) === 0) {
-			if (this.allowEmptyGraph && Utils.size(this.process) === 0) {
-				this.parsed = true;
-				return;
+			if (this.allowEmptyGraph) {
+				let hasProcessKey = Object.keys(this.process).find(key => processKeys.includes(key));
+				if (Utils.size(this.process) === 0 || hasProcessKey) {
+					this.parsed = true;
+					return;
+				}
 			}
-			else {
-				throw makeError('ProcessGraphMissing');
-			}
+			throw makeError('ProcessGraphMissing');
 		}
 
 		this.nodes = Utils.mapObjectValues(this.process.process_graph, (pg, id) => this.createNodeInstance(pg, id, this));
