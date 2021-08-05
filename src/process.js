@@ -34,6 +34,7 @@ class BaseProcess {
 		if (unsupportedArgs.length > 0) {
 			throw new ProcessGraphError('ProcessArgumentUnsupported', {
 				process: this.id,
+				namespace: this.namespace || 'n/a',
 				arguments: unsupportedArgs
 			});
 		}
@@ -46,6 +47,7 @@ class BaseProcess {
 				if (!param.optional) {
 					throw new ProcessGraphError('ProcessArgumentRequired', {
 						process: this.id,
+						namespace: this.namespace || 'n/a',
 						argument: param.name
 					});
 				}
@@ -73,6 +75,7 @@ class BaseProcess {
 					if (!JsonSchemaValidator.isSchemaCompatible(param.schema, callbackParam.schema)) {
 						throw new ProcessGraphError('ProcessArgumentInvalid', {
 							process: this.id,
+							namespace: this.namespace || 'n/a',
 							argument: path,
 							reason: "Schema for parameter '" + arg.from_parameter + "' not compatible with reference"
 						});
@@ -86,7 +89,8 @@ class BaseProcess {
 					throw new ProcessGraphError('ProcessGraphParameterMissing', {
 						argument: arg.from_parameter,
 						node_id: node.id,
-						process_id: node.process_id
+						process_id: node.process_id,
+						namespace: node.namespace
 					});
 				}
 
@@ -98,6 +102,7 @@ class BaseProcess {
 					if (!JsonSchemaValidator.isSchemaCompatible(param.schema, parameter.schema)) {
 						throw new ProcessGraphError('ProcessArgumentInvalid', {
 							process: this.id,
+							namespace: this.namespace || 'n/a',
 							argument: path,
 							reason: "Schema for parameter '" + arg.from_parameter + "' not compatible"
 						});
@@ -111,6 +116,7 @@ class BaseProcess {
 				if (!JsonSchemaValidator.isSchemaCompatible(param.schema, process.returns.schema)) {
 					throw new ProcessGraphError('ProcessArgumentInvalid', {
 						process: this.id,
+						namespace: this.namespace || 'n/a',
 						argument: path,
 						reason: "Schema for result '" + arg.from_node + "' not compatible"
 					});
@@ -155,6 +161,7 @@ class BaseProcess {
 				if (errors.length > 0) {
 					throw new ProcessGraphError('ProcessArgumentInvalid', {
 						process: this.id,
+						namespace: this.namespace || 'n/a',
 						argument: path,
 						reason: errors
 					});

@@ -1,26 +1,20 @@
 const Process = require('./process');
+const CommonProcessRegistry = require('@openeo/js-commons/src/processRegistry');
 const Utils = require('./utils');
 
 /**
  * Central registry for processes.
  * 
+ * Implementation has been moved to @openeo/js-commons.
+ * This wrapper here is only available for backward compatibility.
+ * 
+ * @todo Remove in 2.0.0.
+ * @augments CommonProcessRegistry
  * @class
  */
-class ProcessRegistry {
+class ProcessRegistry extends CommonProcessRegistry {
 
-	constructor(processes = []) {
-		// Keys added to this object must be lowercase!
-		this.processes = {};
-		this.addAll(processes);
-	}
-
-	addAll(processes) {
-		for(var i in processes) {
-			this.add(processes[i]);
-		}
-	}
-
-	add(process) {
+	add(process, namespace = 'backend') {
 		if (!Utils.isObject(process)) {
 			throw new Error("Invalid process; not an object.");
 		}
@@ -35,29 +29,12 @@ class ProcessRegistry {
 		if (typeof process.id !== 'string') {
 			throw new Error("Invalid process; no id specified.");
 		}
-		this.processes[process.id.toLowerCase()] = isImpl ? process : new Process(process);
-	}
 
-	count() {
-		return Utils.size(this.processes);
-	}
-
-	all() {
-		return Object.values(this.processes);
-	}
-	
-	get(id) {
-		if (typeof id === 'string') {
-			var pid = id.toLowerCase();
-			if (typeof this.processes[pid] !== 'undefined') {
-				return this.processes[pid];
-			}
-		}
-		return null;
+		super.add(isImpl ? process : new Process(process), namespace);
 	}
 
 	toJSON() {
-		return Object.values(this.processes).map(impl => impl.toJSON());
+		return this.all().map(impl => impl.toJSON());
 	}
 
 }

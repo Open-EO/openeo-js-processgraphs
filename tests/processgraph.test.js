@@ -57,12 +57,41 @@ class LoadImpl extends ProcessImpl {
 	}
 }
 
+class ProcessGraph2 extends ProcessGraph {
+
+	setQueue(q) {
+		q.clear();
+		this.q = q;
+	}
+
+	createProcessGraphInstance(process) {
+		let pg = new ProcessGraph2(process, this.processRegistry, this.getJsonSchemaValidator());
+		return this.copyProcessGraphInstanceProperties(pg);
+	}
+
+	copyProcessGraphInstanceProperties(pg) {
+		pg = super.copyProcessGraphInstanceProperties(pg);
+		pg.q = this.q;
+		return pg;
+	}
+
+	createProcessInstance(p) {
+		if (p.id === 'load_collection') {
+			return new LoadImpl(p, this.q);
+		}
+		else {
+			return new ProcessImpl(p, this.q);
+		}
+	}
+
+}
+
 var registry;
 describe('Process Graph Tests', () => {
 
 	const q = new Queue();
 	beforeAll(() => {
-		registry = new ProcessRegistry(PROCESSES.map(p => p.id === 'load_collection' ? new LoadImpl(p, q) : new ProcessImpl(p, q)));
+		registry = new ProcessRegistry(PROCESSES);
 	});
 
 	test('Parser > Empty process throws by default', async () => {
@@ -167,7 +196,7 @@ describe('Process Graph Tests', () => {
 
 	const issue4 = require('./assets/issue4.json');
 	test('Validator > complain if callback is not a process', async () => {
-		await validateFailsWith(issue4, "The argument 'reducer' in process 'reduce_dimension' is invalid: No process graph specified");
+		await validateFailsWith(issue4, "The argument 'reducer' in process 'reduce_dimension' (namespace: n/a) is invalid: No process graph specified");
 	});
 
 	test('Validator > validate EVI with registry', async () => {
@@ -183,7 +212,7 @@ describe('Process Graph Tests', () => {
 
 	const ProcessGraphInvalidArgs = require('./assets/invalid_args.json');
 	test('Validator > throw on invalid argument in object', async () => {
-		await validateFailsWith(ProcessGraphInvalidArgs, "The argument 'spatial_extent' in process 'load_collection' is invalid");
+		await validateFailsWith(ProcessGraphInvalidArgs, "The argument 'spatial_extent' in process 'load_collection' (namespace: n/a) is invalid");
 	});
 
 	const ProcessGraphParamInObj = require('./assets/param_in_obj_arg.json');
@@ -195,7 +224,7 @@ describe('Process Graph Tests', () => {
 	test('Validator > do NOT allow undefined param', async () => {
 		var pg = new ProcessGraph(ProcessGraphUndefinedParam, registry);
 		pg.allowUndefinedParameters(false);
-		await validateFailsWith(pg, "Invalid parameter 'cid' requested in the process");
+		await validateFailsWith(pg, "Invalid parameter 'cid' referenced in process node 'dc' (process: load_collection, namespace: n/a).");
 	});
 	test('Validator > allow undefined param', async () => {
 		var pg = new ProcessGraph(ProcessGraphUndefinedParam, registry);
@@ -237,7 +266,7 @@ describe('Process Graph Tests', () => {
 				}
 			}
 		};
-		await validateFailsWith(pg, "Process 'absolute' does not support the following arguments: z");
+		await validateFailsWith(pg, "Process 'absolute' (namespace: n/a) does not support the following arguments: z");
 	});
 
 	test('Validator > Missing argument throws', async () => {
@@ -250,7 +279,7 @@ describe('Process Graph Tests', () => {
 				}
 			}
 		};
-		await validateFailsWith(pg, "Process 'absolute' requires argument 'x'.");
+		await validateFailsWith(pg, "Process 'absolute' (namespace: n/a) requires argument 'x'.");
 	});
 
 	let missingProcess = {
@@ -263,7 +292,7 @@ describe('Process Graph Tests', () => {
 		}
 	};
 	test('Validator > Process missing', async () => {
-		await validateFailsWith(missingProcess, "Process 'foo' is not supported.");
+		await validateFailsWith(missingProcess, "Process 'foo' (namespace: n/a) is not supported.");
 	});
 
 	test('Validator > Validate callbacks', async () => {
@@ -279,13 +308,13 @@ describe('Process Graph Tests', () => {
 				}
 			}
 		};
-		await validateFailsWith(pg, "Process 'foo' is not supported.");
+		await validateFailsWith(pg, "Process 'foo' (namespace: n/a) is not supported.");
 	});
 
 	const ProcessGraphLoadCol = require('./assets/load_collection_properties.json');
 	test('Executor > execute load_collection properties', async () => {
-		var pg = new ProcessGraph(ProcessGraphLoadCol, registry);
-		q.clear();
+		var pg = new ProcessGraph2(ProcessGraphLoadCol, registry);
+		pg.setQueue(q);
 		var resultNode = await pg.execute();
 		expect(pg.isValid()).toBe(true);
 		expect(pg.getErrors().count()).toEqual(0);
@@ -294,19 +323,19 @@ describe('Process Graph Tests', () => {
 	});
 
 	test('Executor > fail if no arguments for execute have been set', async () => {
-		var pg = new ProcessGraph(ProcessGraphEVI, registry);
-		q.clear();
+		var pg = new ProcessGraph2(ProcessGraphEVI, registry);
+		pg.setQueue(q);
 		try {
 			let result = await pg.execute();
 			expect(result).toBeUndefined();
 		} catch (error) {
-			expect(error.message).toContain("Invalid parameter 'collection-id' requested in the process 'load_collection'");
+			expect(error.message).toContain("Invalid parameter 'collection-id' referenced in process node 'dc' (process: load_collection, namespace: n/a)");
 		}
 	});
 
 	test('Executor > execute EVI with registry', async () => {
-		var pg = new ProcessGraph(ProcessGraphEVI, registry);
-		q.clear();
+		var pg = new ProcessGraph2(ProcessGraphEVI, registry);
+		pg.setQueue(q);
 		var resultNode = await pg.execute({
 			"collection-id": "S2"
 		});

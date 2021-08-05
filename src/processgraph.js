@@ -1,3 +1,4 @@
+const BaseProcess = require('./process');
 const ErrorList = require('./errorlist');
 const JsonSchemaValidator = require('./jsonschema');
 const ProcessGraphError = require('./error');
@@ -72,6 +73,10 @@ class ProcessGraph {
 	createProcessGraphInstance(process) {
 		let pg = new ProcessGraph(process, this.processRegistry, this.getJsonSchemaValidator());
 		return this.copyProcessGraphInstanceProperties(pg);
+	}
+
+	createProcessInstance(process) {
+		return new BaseProcess(process);
 	}
 
 	copyProcessGraphInstanceProperties(pg) {
@@ -473,21 +478,23 @@ class ProcessGraph {
 	 * Gets the process for the given process ID or node.
 	 * 
 	 * @param {ProcessGraphNode|string} id 
+	 * @param {?string} [namespace=null]
 	 * @returns {object|null}
 	 * @throws {ProcessGraphError} - ProcessUnsupported
 	 */
-	getProcess(id) {
+	getProcess(id, namespace = null) {
 		if (this.processRegistry === null) {
 			return null;
 		}
 		if (id instanceof ProcessGraphNode) {
 			id = id.process_id;
+			namespace = id.namespace;
 		}
-		var process = this.processRegistry.get(id);
+		var process = this.processRegistry.get(id, namespace);
 		if (process === null) {
-			throw new ProcessGraphError('ProcessUnsupported', {process: id});
+			throw new ProcessGraphError('ProcessUnsupported', {process: id, namespace: namespace || 'n/a'});
 		}
-		return process;
+		return this.createProcessInstance(process);
 	}
 
 	getParentProcessId() {

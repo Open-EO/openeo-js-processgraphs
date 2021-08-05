@@ -1,4 +1,4 @@
-const PROCESSES = require('./assets/processes.json');
+const PROCESSES = require('../tests/assets/processes.json');
 
 const BaseProcess = require('../src/process');
 const ProcessRegistry = require('../src/registry');
@@ -14,7 +14,10 @@ describe('Registry Tests', () => {
 	});
 
 	test('Get process', () => {
-		checkAbsolute(registry);
+		var processName = "absolute";
+		var absolute = registry.get(processName);
+		expect(absolute).toBeInstanceOf(BaseProcess);
+		expect(absolute.id).toBe(processName);
 
 		var x = registry.get("unknown-process");
 		expect(x).toBeNull();
@@ -30,28 +33,25 @@ describe('Registry Tests', () => {
 		expect(registry.all()).toEqual(PROCESSES.map(p => new BaseProcess(p)));
 	});
 
-	test('Add specifications individually', () => {
+	class absolute {
+		constructor() {
+			this.spec = registry.get("absolute");
+		}
+		toJSON() {
+			return this.spec;
+		}
+	}
+
+	test('Add invalid specifications individually', () => {
 		expect(() => registry.add(null)).toThrowError();
 		expect(() => registry.add({description: "Test"})).toThrowError();
+	});
 
+	test('Add specifications individually via toJSON', () => {
 		let registry2 = new ProcessRegistry();
-		class absolute {
-			constructor() {
-				this.spec = registry.get("absolute");
-			}
-			toJSON() {
-				return this.spec;
-			}
-		}
 		registry2.add(new absolute());
-		checkAbsolute(registry2);
+		var process = registry.get("absolute");
+		expect(process.id).toBe("absolute");
 	});
 
   });
-
-  function checkAbsolute(reg) {
-		var processName = "absolute";
-		var absolute = reg.get(processName);
-		expect(absolute).toBeInstanceOf(BaseProcess);
-		expect(absolute.id).toBe(processName);
-  }
