@@ -11,8 +11,6 @@ const Utils = require('./utils');
 class BaseProcess {
 
 	constructor(spec) {
-		this.spec = spec; // Keep original specification data
-
 		// Make properties easily accessible 
 		Object.assign(this, spec);
 
@@ -25,7 +23,7 @@ class BaseProcess {
 	}
 
 	toJSON() {
-		return this.spec;
+		return Utils.omitFromObject(this, ["validate", "validateArgument", "execute", "test"]);
 	}
 
 	async validate(node) {
@@ -171,13 +169,13 @@ class BaseProcess {
 
 	/* istanbul ignore next */
 	async execute(/*node*/) {
-		throw "execute not implemented yet";
+		throw new Error(`execute not implemented yet for process '${this.id}' (namespace: ${this.namespace})`);
 	}
 
 	/* istanbul ignore next */
 	test() {
 		// Run the tests from the examples
-		throw "test not implemented yet";
+		throw new Error(`test not implemented yet for process '${this.id}' (namespace: ${this.namespace})`);
 	}
 
 }
