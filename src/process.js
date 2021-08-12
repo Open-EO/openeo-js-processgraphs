@@ -88,7 +88,7 @@ class BaseProcess {
 						argument: arg.from_parameter,
 						node_id: node.id,
 						process_id: node.process_id,
-						namespace: node.namespace
+						namespace: node.namespace || 'n/a'
 					});
 				}
 
@@ -169,13 +169,13 @@ class BaseProcess {
 
 	/* istanbul ignore next */
 	async execute(/*node*/) {
-		throw new Error(`execute not implemented yet for process '${this.id}' (namespace: ${this.namespace})`);
+		throw new Error(`execute not implemented yet for process '${this.id}' (namespace: ${this.namespace || 'n/a'})`);
 	}
 
 	/* istanbul ignore next */
 	test() {
 		// Run the tests from the examples
-		throw new Error(`test not implemented yet for process '${this.id}' (namespace: ${this.namespace})`);
+		throw new Error(`test not implemented yet for process '${this.id}' (namespace: ${this.namespace || 'n/a'})`);
 	}
 
 }

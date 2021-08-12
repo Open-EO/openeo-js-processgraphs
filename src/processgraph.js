@@ -477,24 +477,28 @@ class ProcessGraph {
 	/**
 	 * Gets the process for the given process ID or node.
 	 * 
-	 * @param {ProcessGraphNode|string} id 
+	 * @param {ProcessGraphNode|string} process 
 	 * @param {?string} [namespace=null]
 	 * @returns {object|null}
 	 * @throws {ProcessGraphError} - ProcessUnsupported
 	 */
-	getProcess(id, namespace = null) {
+	getProcess(process, namespace = null) {
 		if (this.processRegistry === null) {
 			return null;
 		}
-		if (id instanceof ProcessGraphNode) {
-			id = id.process_id;
-			namespace = id.namespace;
+		let id;
+		if (process instanceof ProcessGraphNode) {
+			id = process.process_id;
+			namespace = process.namespace;
 		}
-		var process = this.processRegistry.get(id, namespace);
-		if (process === null) {
+		else {
+			id = process;
+		}
+		let spec = this.processRegistry.get(id, namespace);
+		if (spec === null) {
 			throw new ProcessGraphError('ProcessUnsupported', {process: id, namespace: namespace || 'n/a'});
 		}
-		return this.createProcessInstance(process);
+		return this.createProcessInstance(spec);
 	}
 
 	getParentProcessId() {
