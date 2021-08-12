@@ -28,7 +28,7 @@ describe('ErrorList test', () => {
     expect(el.getAll()).toStrictEqual([e1]);
   });
   var e2 = new ProcessGraphError("MultipleResultNodes");
-  var msg2 = "Multiple result nodes specified for process graph.";
+  var msg2 = "Multiple result nodes specified for the process.";
   test('Adding second error - custom impl.', () => {
     el.add(e2);
     expect(el.first()).toBe(e1);

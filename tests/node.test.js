@@ -10,6 +10,7 @@ var subProcess = {
 	process_graph: {
 		absolute: {
 			process_id: "absolute",
+			namespace: null,
 			arguments: {
 				x: from_x
 			},
@@ -25,6 +26,7 @@ var contextResult = [fooDefault, undefined].concat(contextAdditionals);
 
 var nodeObj = {
 	process_id: "apply",
+	namespace: null,
 	arguments: {
 		process: subProcess,
 		context: contextObj,

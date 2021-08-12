@@ -23,6 +23,7 @@ class ProcessGraphNode {
 		this.processGraph = parent;
 		this.source = node;
 		this.process_id = node.process_id;
+		this.namespace = node.namespace || null;
 		this.arguments = Utils.isObject(node.arguments) ? Utils.deepClone(node.arguments) : {};
 		this.description = node.description || null;
 		this.isResultNode = node.result || false;
@@ -36,6 +37,7 @@ class ProcessGraphNode {
 		let args = Utils.mapObjectValues(this.arguments, arg => Utils.isObject(arg) && typeof arg.toJSON === 'function' ? arg.toJSON() : arg);
 		return Object.assign({}, this.source, {
 			process_id: this.process_id,
+			namespace: this.namespace,
 			description: this.description,
 			arguments: args,
 			result: this.isResultNode
@@ -113,7 +115,8 @@ class ProcessGraphNode {
 			throw new ProcessGraphError('ProcessGraphParameterMissing', {
 				argument: name,
 				node_id: this.id,
-				process_id: this.process_id
+				process_id: this.process_id,
+				namespace: this.namespace || 'n/a'
 			});
 		}
 	}
