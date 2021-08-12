@@ -9,6 +9,7 @@ const CommonProcessRegistry = require('@openeo/js-commons/src/processRegistry');
  * @todo Remove in 2.0.0.
  * @augments CommonProcessRegistry
  * @class
+ * @deprecated
  */
 class ProcessRegistry extends CommonProcessRegistry {
 

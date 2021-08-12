@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2021-08-12
+
+### Added
+
+- Implemented process namespace support.
+
+### Changed
+
+- Improved clarity of error messages.
+- `BaseProcess` class doesn't expose process properties via (non-public) `spec` property any longer.
+
+### Deprecated
+
+- `ProcessRegistry` has been deprecated. Use the `ProcessRegistry` from `@openeo/js-commons` (since v1.4.0) instead.
+
 ## [1.2.1] - 2021-08-02
 
 ### Fixed
@@ -37,7 +52,8 @@ First stable release supporting openEO API 1.0.0.
 
 All prior releases have been documented in the [GitHub Releases](https://github.com/Open-EO/openeo-js-processgraphs/releases).
 
-[Unreleased]: <https://github.com/Open-EO/openeo-js-processgraphs/compare/v1.2.1...HEAD>
+[Unreleased]: <https://github.com/Open-EO/openeo-js-processgraphs/compare/v1.3.0...HEAD>
+[1.3.0]: <https://github.com/Open-EO/openeo-js-processgraphs/compare/v1.2.1...v1.3.0>
 [1.2.1]: <https://github.com/Open-EO/openeo-js-processgraphs/compare/v1.2.0...v1.2.1>
 [1.2.0]: <https://github.com/Open-EO/openeo-js-processgraphs/compare/v1.1.0...v1.2.0>
 [1.1.0]: <https://github.com/Open-EO/openeo-js-processgraphs/compare/v1.0.0...v1.1.0>
