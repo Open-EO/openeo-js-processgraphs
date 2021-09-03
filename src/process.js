@@ -81,17 +81,8 @@ class BaseProcess {
 					return;
 				}
 
-				// Validate all other parameters (value must be available if allowUndefinedParameterRefs is false)
+				// Validate all other parameters
 				let value = node.getProcessGraphParameterValue(arg.from_parameter);
-				if (typeof value === 'undefined' && !pg.allowUndefinedParameterRefs) {
-					throw new ProcessGraphError('ProcessGraphParameterMissing', {
-						argument: arg.from_parameter,
-						node_id: node.id,
-						process_id: node.process_id,
-						namespace: node.namespace || 'n/a'
-					});
-				}
-
 				let parameter = pg.getProcessParameter(arg.from_parameter);
 				if (Utils.isObject(parameter) && parameter.schema) {
 					if (typeof value !== 'undefined') {
