@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2024-08-12
+
+### Changed
+
+- The compatibility check for schemas is more liberal
+- Updated dev dependencies
+
 ## [1.3.0] - 2021-08-12
 
 ### Added
@@ -52,7 +59,8 @@ First stable release supporting openEO API 1.0.0.
 
 All prior releases have been documented in the [GitHub Releases](https://github.com/Open-EO/openeo-js-processgraphs/releases).
 
-[Unreleased]: <https://github.com/Open-EO/openeo-js-processgraphs/compare/v1.3.0...HEAD>
+[Unreleased]: <https://github.com/Open-EO/openeo-js-processgraphs/compare/v1.4.0...HEAD>
+[1.4.0]: <https://github.com/Open-EO/openeo-js-processgraphs/compare/v1.3.0...v1.4.0>
 [1.3.0]: <https://github.com/Open-EO/openeo-js-processgraphs/compare/v1.2.1...v1.3.0>
 [1.2.1]: <https://github.com/Open-EO/openeo-js-processgraphs/compare/v1.2.0...v1.2.1>
 [1.2.0]: <https://github.com/Open-EO/openeo-js-processgraphs/compare/v1.1.0...v1.2.0>
