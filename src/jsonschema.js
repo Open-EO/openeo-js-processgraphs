@@ -316,19 +316,41 @@ class JsonSchemaValidator {
 				if (typeof ps.type !== 'string' || (!strict && typeof vs.type !== 'string')) { // "any" type is always compatible
 					return true;
 				}
-				else if (ps.type === vs.type || (allowValueAsElements && (ps.type === 'array' || ps.type === 'object')) || (ps.type === 'number' && vs.type === 'integer') || (!strict && ps.type === 'integer' && vs.type === 'number')) {
-					if (ps.type === 'array' && Utils.isObject(ps.items) && Utils.isObject(vs.items))  {
-						if (allowValueAsElements && JsonSchemaValidator.isSchemaCompatible(ps.items, vs, strict)) {
-							return true;
+				else if (
+					ps.type === vs.type ||
+					(allowValueAsElements && (ps.type === 'array' || ps.type === 'object')) ||
+					(ps.type === 'number' && vs.type === 'integer') ||
+					(!strict && ps.type === 'integer' && vs.type === 'number')
+				) {
+					if (ps.type === 'array' && Utils.isObject(ps.items))  {
+						const checkArray = (schema) => { // jshint ignore:line
+							if (allowValueAsElements && JsonSchemaValidator.isSchemaCompatible(schema, vs, strict)) {
+								return true;
+							}
+							else if (Utils.isObject(vs.items) && JsonSchemaValidator.isSchemaCompatible(schema, vs.items, strict)) {
+								return true;
+							}
+							return false;
+						};
+						if (Array.isArray(ps.items.anyOf) || Array.isArray(ps.items.oneOf)) {
+							return (ps.items.anyOf || ps.items.oneOf).some(checkArray);
 						}
-						else if (JsonSchemaValidator.isSchemaCompatible(ps.items, vs.items, strict)) {
-							return true;
+						else {
+							return checkArray(ps.items);
 						}
 					}
-					else if (ps.type === 'object' && Utils.isObject(ps.properties) && Utils.isObject(vs.properties)) {
+					else if (ps.type === 'object') {
+						if (ps.subtype === vs.subtype) {
+							return true;
+						}
+						else if (ps.subtype === 'datacube' || vs.subtype === 'datacube') {
+							return true;
+						}
 						// ToDo: Check properties, required properties etc.
 						// If allowValueAsElements is true, all types are allowed to be part of the object.
-						return true;
+						else if (Utils.isObject(ps.properties) && Utils.isObject(vs.properties)) {
+							return true;
+						}
 					}
 					// Check subtypes
 					else if (!strict && (typeof ps.subtype !== 'string' || typeof vs.subtype !== 'string')) {

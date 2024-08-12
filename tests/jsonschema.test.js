@@ -1,8 +1,6 @@
 const JsonSchemaValidator = require('../src/jsonschema');
-const ProcessRegistry = require('../src/registry');
 const Utils = require('../src/utils');
 const epsg = require('epsg-index/all.json');
-const PROCESSES = require('./assets/processes.json');
 
 process.on('unhandledRejection', r => console.log(r));
 
@@ -379,42 +377,118 @@ describe('JSON Schema Validator Tests', () => {
 	var integerType = {type: "integer"};
 	var stringType = {type: "string"};
 	var dateTimeType = {type: "string", subtype: "date-time", format: "date-time"};
+	var dateType = {type: "string", subtype: "date", format: "date"};
+	var temporalTypes = [dateTimeType, dateType];
+	var temporalIntervalType = {
+		"type": "array",
+		"subtype": "temporal-interval",
+		"uniqueItems": true,
+		"minItems": 2,
+		"maxItems": 2,
+		"items": {
+			"anyOf": [
+				{
+					"type": "string",
+					"format": "date-time",
+					"subtype": "date-time"
+				},
+				{
+					"type": "string",
+					"format": "date",
+					"subtype": "date"
+				},
+				{
+					"type": "null"
+				}
+			]
+		}
+	};
 	var nullType = {type: "null"};
 	var arrayOfAny = {type: 'array', items: {}};
 	var arrayOfNumbers = {type: 'array', items: {type: 'number'}};
 	var arrayOfIntegers = {type: 'array', items: {type: 'integer'}};
 	var anyType = {};
-	var rasterCubeType = {type: "object", subtype: "raster-cube"};
-	var vectorCubeType = {type: "object", subtype: "vector-cube"};
-	var dataCubeType = [rasterCubeType, vectorCubeType];
+	var dataCubeType = {type: "object", subtype: "datacube"};
+	var dataCubeTypeXYT = {type: "object", subtype: "datacube", dimensions: [{type: 'spatial', 'axis': 'x'}, {type: 'spatial', 'axis': 'y'}, {type: 'temporal'}]};
+	var dataCubeTypeGeom = {type: "object", subtype: "datacube", dimensions: [{type: 'geometry'}]};
+	var dataCubeTypeT = {type: "object", subtype: "datacube", dimensions: [{type: 'temporal'}]};
+	var legacyRasterCubeType = {type: "object", subtype: "raster-cube"};
+	var legacyVectorCubeType = {type: "object", subtype: "vector-cube"};
+	var legacyDataCubeTypes = [legacyRasterCubeType, legacyVectorCubeType];
 
-	test('isSchemaCompatible', async () => {
-		expect(await JsonSchemaValidator.isSchemaCompatible(numberNullType, integerType)).toBeTruthy();
-		expect(await JsonSchemaValidator.isSchemaCompatible(integerType, numberNullType)).toBeTruthy();
-		expect(await JsonSchemaValidator.isSchemaCompatible(integerType, numberNullType, true)).toBeFalsy();
-		expect(await JsonSchemaValidator.isSchemaCompatible(numberNullType, nullType)).toBeTruthy();
-		expect(await JsonSchemaValidator.isSchemaCompatible(nullType, numberNullType)).toBeTruthy();
-		expect(await JsonSchemaValidator.isSchemaCompatible(stringType, dateTimeType)).toBeTruthy();
-		expect(await JsonSchemaValidator.isSchemaCompatible(stringType, dateTimeType, true)).toBeTruthy();
-		expect(await JsonSchemaValidator.isSchemaCompatible(dateTimeType, stringType)).toBeTruthy();
-		expect(await JsonSchemaValidator.isSchemaCompatible(dateTimeType, stringType, true)).toBeFalsy();
-		expect(await JsonSchemaValidator.isSchemaCompatible(dateTimeType, dateTimeType)).toBeTruthy();
-		expect(await JsonSchemaValidator.isSchemaCompatible(arrayOfNumbers, arrayOfIntegers)).toBeTruthy();
-		expect(await JsonSchemaValidator.isSchemaCompatible(arrayOfIntegers, arrayOfNumbers)).toBeTruthy();
-		expect(await JsonSchemaValidator.isSchemaCompatible(arrayOfIntegers, arrayOfNumbers, true)).toBeFalsy();
-		expect(await JsonSchemaValidator.isSchemaCompatible(arrayOfIntegers, arrayOfAny)).toBeTruthy();
-		expect(await JsonSchemaValidator.isSchemaCompatible(arrayOfIntegers, arrayOfAny, true)).toBeFalsy();
-		expect(await JsonSchemaValidator.isSchemaCompatible(arrayOfAny, arrayOfIntegers)).toBeTruthy();
-		expect(await JsonSchemaValidator.isSchemaCompatible(numberNullType, anyType)).toBeTruthy();
-		expect(await JsonSchemaValidator.isSchemaCompatible(numberNullType, anyType, true)).toBeFalsy();
-		expect(await JsonSchemaValidator.isSchemaCompatible(anyType, numberNullType)).toBeTruthy();
-		expect(await JsonSchemaValidator.isSchemaCompatible(dataCubeType, nullType)).toBeFalsy();
-		expect(await JsonSchemaValidator.isSchemaCompatible(dataCubeType, rasterCubeType)).toBeTruthy();
-		expect(await JsonSchemaValidator.isSchemaCompatible(dataCubeType, vectorCubeType)).toBeTruthy();
-		expect(await JsonSchemaValidator.isSchemaCompatible(rasterCubeType, dataCubeType)).toBeTruthy();
-		expect(await JsonSchemaValidator.isSchemaCompatible(rasterCubeType, vectorCubeType)).toBeFalsy();
-		expect(await JsonSchemaValidator.isSchemaCompatible(arrayOfNumbers, numberNullType, false, false)).toBeFalsy();
-		expect(await JsonSchemaValidator.isSchemaCompatible(arrayOfNumbers, numberNullType, false, true)).toBeTruthy();
+	var schemaTests = [
+		// parameter schema, value schema, expected result, strict mode?, allow value as elements?
+		[numberNullType, integerType, true],
+		[integerType, numberNullType, true],
+		[integerType, numberNullType, true, false],
+		[numberNullType, nullType, true],
+		[nullType, numberNullType, true],
+		[stringType, dateTimeType, true],
+		[stringType, dateTimeType, true, true],
+		[dateTimeType, stringType, true],
+		[dateTimeType, stringType, true, false],
+		[dateTimeType, dateTimeType, true],
+		[dateTimeType, dateType, false],
+		[dateType, dateTimeType, false],
+		[temporalIntervalType, dateTimeType, false],
+		[temporalIntervalType, dateType, false],
+		[temporalIntervalType, temporalTypes, false],
+		[temporalIntervalType, dateTimeType, true, false, true],
+		[temporalIntervalType, dateType, true, false, true],
+		[temporalIntervalType, temporalTypes, true, false, true],
+		[arrayOfNumbers, arrayOfIntegers, true],
+		[arrayOfIntegers, arrayOfNumbers, true],
+		[arrayOfIntegers, arrayOfNumbers, true, false],
+		[arrayOfIntegers, arrayOfAny, true],
+		[arrayOfIntegers, arrayOfAny, true, false],
+		[arrayOfAny, arrayOfIntegers, true],
+		[numberNullType, anyType, true],
+		[numberNullType, anyType, true, false],
+		[anyType, numberNullType, true],
+		[arrayOfNumbers, numberNullType, false, false, false],
+		[arrayOfNumbers, numberNullType, true, false, true],
+		[dataCubeType, nullType, false],
+		[legacyDataCubeTypes, nullType, false],
+		[dataCubeType, legacyRasterCubeType, true],
+		[dataCubeType, legacyVectorCubeType, true],
+		[dataCubeType, dataCubeType, true],
+		[dataCubeType, dataCubeTypeGeom, true],
+		[dataCubeType, dataCubeTypeT, true],
+		[dataCubeType, dataCubeTypeXYT, true],
+		[dataCubeTypeXYT, legacyRasterCubeType, true],
+		[dataCubeTypeXYT, legacyVectorCubeType, true],
+		[dataCubeTypeXYT, dataCubeType, true],
+		[dataCubeTypeXYT, dataCubeTypeT, true],
+		[dataCubeTypeXYT, dataCubeTypeXYT, true],
+		[dataCubeTypeXYT, dataCubeTypeGeom, true],
+		[dataCubeTypeGeom, legacyRasterCubeType, true],
+		[dataCubeTypeGeom, legacyVectorCubeType, true],
+		[dataCubeTypeGeom, dataCubeType, true],
+		[dataCubeTypeGeom, dataCubeTypeT, true],
+		[dataCubeTypeGeom, dataCubeTypeXYT, true],
+		[dataCubeTypeGeom, dataCubeTypeGeom, true],
+		[dataCubeTypeT, legacyRasterCubeType, true],
+		[dataCubeTypeT, legacyVectorCubeType, true],
+		[dataCubeTypeT, dataCubeType, true],
+		[dataCubeTypeT, dataCubeTypeT, true],
+		[dataCubeTypeT, dataCubeTypeXYT, true],
+		[dataCubeTypeT, dataCubeTypeGeom, true],
+		[legacyRasterCubeType, legacyRasterCubeType, true],
+		[legacyRasterCubeType, legacyVectorCubeType, false],
+		[legacyRasterCubeType, dataCubeType, true],
+		[legacyRasterCubeType, dataCubeTypeT, true],
+		[legacyRasterCubeType, dataCubeTypeXYT, true],
+		[legacyRasterCubeType, dataCubeTypeGeom, true],
+		[legacyVectorCubeType, legacyRasterCubeType, false],
+		[legacyVectorCubeType, legacyVectorCubeType, true],
+		[legacyVectorCubeType, dataCubeType, true],
+		[legacyVectorCubeType, dataCubeTypeT, true],
+		[legacyVectorCubeType, dataCubeTypeXYT, true],
+		[legacyVectorCubeType, dataCubeTypeGeom, true],
+	];
+
+	test.each(schemaTests)('isSchemaCompatible: %o and %o => %p', async (param, value, expected, strict = false, allowValueAsElements = false) => {
+		expect(await JsonSchemaValidator.isSchemaCompatible(param, value, strict, allowValueAsElements)).toBe(expected);
 	});
 
-  });
+});
