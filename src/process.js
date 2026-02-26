@@ -102,7 +102,7 @@ class BaseProcess {
 			case 'result':
 				let resultNode = pg.getNode(arg.from_node);
 				let process = pg.getProcess(resultNode);
-				if (!JsonSchemaValidator.isSchemaCompatible(param.schema, process.returns.schema)) {
+				if (Utils.isObject(process.returns) && !JsonSchemaValidator.isSchemaCompatible(param.schema, process.returns.schema)) {
 					throw new ProcessGraphError('ProcessArgumentInvalid', {
 						process: this.id,
 						namespace: this.namespace || 'n/a',
