@@ -354,9 +354,9 @@ describe('JSON Schema Validator Tests', () => {
 		"subtype": "temporal-interval"
 	};
 	test('temporal-interval', async () => {
-		await expectSuccess(v, ["2020-01-01T00:00:00Z", "2020-01-01T00:00:00Z"], temporalIntervalSchema);
-		await expectSuccess(v, ["10:00:00Z", "12:00:00Z"], temporalIntervalSchema);
+		await expectSuccess(v, ["2020-01-01T00:00:00Z", "2021-01-01T00:00:00Z"], temporalIntervalSchema);
 		await expectSuccess(v, ["2020-01-01", null], temporalIntervalSchema);
+		await expectError(v, ["10:00:00Z", "12:00:00Z"], temporalIntervalSchema);
 		await expectError(v, [], temporalIntervalSchema);
 		await expectError(v, [null, null], temporalIntervalSchema);
 		await expectError(v, ["2021-01-01", "2020-01-01"], temporalIntervalSchema);
@@ -367,7 +367,7 @@ describe('JSON Schema Validator Tests', () => {
 		"subtype": "temporal-intervals"
 	};
 	test('temporal-intervals', async () => {
-		await expectSuccess(v, [["2020-01-01T00:00:00Z", "2020-01-01T00:00:00Z"]], temporalIntervalsSchema);
+		await expectSuccess(v, [["2020-01-01T00:00:00Z", "2021-01-01T00:00:00Z"]], temporalIntervalsSchema);
 		await expectError(v, [], temporalIntervalsSchema);
 		await expectError(v, ["2020-01-01", null], temporalIntervalsSchema);
 		await expectError(v, [[null, null], ["2020-01-01T00:00:00Z", "2020-01-01T00:00:00Z"]], temporalIntervalsSchema);

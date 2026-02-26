@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.4.2] - 2026-02-26
 
+### Changed
+
+- Updated `subtype-schemas.json` to the latest version
+
 ### Fixed
 
 - Fix validation error when process had no return value schema
